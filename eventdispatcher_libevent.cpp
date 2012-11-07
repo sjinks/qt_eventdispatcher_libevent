@@ -192,8 +192,9 @@ void EventDispatcherLibEventPrivate::registerTimer(int timerId, int interval, QO
 	info->object   = object;
 
 	struct timeval tv;
-	tv.tv_sec  = interval / 1000000;
-	tv.tv_usec = interval % 1000000;
+	// Interval is msec, not usec
+	tv.tv_sec  = interval / 1000;
+	tv.tv_usec = (interval % 1000) * 1000;
 	event_add(info->ev, &tv);
 
 	this->m_timers.insert(timerId, info);
