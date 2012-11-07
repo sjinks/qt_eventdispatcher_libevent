@@ -1,0 +1,35 @@
+#ifndef EVENTDISPATCHER_LIBEVENT_H
+#define EVENTDISPATCHER_LIBEVENT_H
+
+#include <QtCore/QAbstractEventDispatcher>
+
+class EventDispatcherLibEventPrivate;
+
+class EventDispatcherLibEvent : public QAbstractEventDispatcher {
+	Q_OBJECT
+public:
+	explicit EventDispatcherLibEvent(QObject* parent = 0);
+	virtual ~EventDispatcherLibEvent(void);
+
+	virtual bool processEvents(QEventLoop::ProcessEventsFlags flags);
+	virtual bool hasPendingEvents(void);
+
+	virtual void registerSocketNotifier(QSocketNotifier* notifier);
+	virtual void unregisterSocketNotifier(QSocketNotifier* notifier);
+
+	virtual void registerTimer(int timerId, int interval, QObject* object);
+	virtual bool unregisterTimer(int timerId);
+	virtual bool unregisterTimers(QObject* object);
+	virtual QList<QAbstractEventDispatcher::TimerInfo> registeredTimers(QObject* object) const;
+
+	virtual void wakeUp(void);
+	virtual void interrupt(void);
+	virtual void flush(void);
+
+private:
+	Q_DISABLE_COPY(EventDispatcherLibEvent)
+	Q_DECLARE_PRIVATE(EventDispatcherLibEvent)
+	QScopedPointer<EventDispatcherLibEventPrivate> d_ptr;
+};
+
+#endif // EVENTDISPATCHER_LIBEVENT_H
