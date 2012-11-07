@@ -9,6 +9,16 @@
 #include <unistd.h>
 #include "eventdispatcher_libevent.h"
 
+#if QT_VERSION <= 0x050000
+namespace Qt { // Sorry
+	enum TimerType {
+		PreciseTimer,
+		CoarseTimer,
+		VeryCoarseTimer
+	};
+}
+#endif
+
 static int make_pipe(int pipefd[2])
 {
 	int res = ::pipe(pipefd);
@@ -32,10 +42,11 @@ public:
 	bool processEvents(QEventLoop::ProcessEventsFlags flags);
 	void registerSocketNotifier(QSocketNotifier* notifier);
 	void unregisterSocketNotifier(QSocketNotifier* notifier);
-	void registerTimer(int timerId, int interval, QObject* object);
+	void registerTimer(int timerId, int interval, Qt::TimerType type, QObject* object);
 	bool unregisterTimer(int timerId);
 	bool unregisterTimers(QObject* object);
 	QList<QAbstractEventDispatcher::TimerInfo> registeredTimers(QObject* object) const;
+	int remainingTime(int timerId);
 
 
 	struct SocketNotifierInfo {
@@ -48,6 +59,7 @@ public:
 		struct event* ev;
 		int timerId;
 		int interval;
+		Qt::TimerType type;
 		QObject* object;
 	};
 
@@ -182,13 +194,15 @@ void EventDispatcherLibEventPrivate::unregisterSocketNotifier(QSocketNotifier* n
 	}
 }
 
-void EventDispatcherLibEventPrivate::registerTimer(int timerId, int interval, QObject* object)
+void EventDispatcherLibEventPrivate::registerTimer(int timerId, int interval, Qt::TimerType type, QObject* object)
 {
+	// TODO: Honor timer type
 	EventDispatcherLibEventPrivate::TimerInfo* info = new EventDispatcherLibEventPrivate::TimerInfo;
 	info->self     = this;
 	info->ev       = event_new(this->m_base, -1, EV_PERSIST, EventDispatcherLibEventPrivate::timer_callback, info);
 	info->timerId  = timerId;
 	info->interval = interval;
+	info->type     = type;
 	info->object   = object;
 
 	struct timeval tv;
@@ -249,6 +263,31 @@ QList<QAbstractEventDispatcher::TimerInfo> EventDispatcherLibEventPrivate::regis
 	}
 
 	return res;
+}
+
+int EventDispatcherLibEventPrivate::remainingTime(int timerId)
+{
+	TimerHash::Iterator it = this->m_timers.find(timerId);
+	if (it != this->m_timers.end()) {
+		EventDispatcherLibEventPrivate::TimerInfo* info = it.value();
+		struct timeval when;
+		struct timeval now;
+
+		event_base_gettimeofday_cached(this->m_base, &now);
+		int r = event_pending(info->ev, EV_TIMEOUT, &when);
+		if (r) {
+			ulong tnow  = now.tv_sec  + now.tv_usec  * 1000000;
+			ulong twhen = when.tv_sec + when.tv_usec * 1000000;
+
+			if (tnow > twhen) {
+				return 0;
+			}
+
+			return (twhen - tnow) / 1000;
+		}
+	}
+
+	return -1;
 }
 
 
@@ -312,7 +351,7 @@ bool EventDispatcherLibEvent::processEvents(QEventLoop::ProcessEventsFlags flags
 
 bool EventDispatcherLibEvent::hasPendingEvents(void)
 {
-	extern Q_CORE_EXPORT uint qGlobalPostedEventsCount();
+	extern uint qGlobalPostedEventsCount();
 	return qGlobalPostedEventsCount() > 0;
 }
 
@@ -359,7 +398,14 @@ void EventDispatcherLibEvent::unregisterSocketNotifier(QSocketNotifier* notifier
 	d->unregisterSocketNotifier(notifier);
 }
 
-void EventDispatcherLibEvent::registerTimer(int timerId, int interval, QObject* object)
+void EventDispatcherLibEvent::registerTimer(
+	int timerId,
+	int interval,
+#if QT_VERSION >= 0x050000
+	Qt::TimerType timerType,
+#endif
+	QObject* object
+)
 {
 #ifndef QT_NO_DEBUG
 	if (timerId < 1 || interval < 0 || !object) {
@@ -373,8 +419,15 @@ void EventDispatcherLibEvent::registerTimer(int timerId, int interval, QObject* 
 	}
 #endif
 
+	Qt::TimerType type;
+#if QT_VERSION >= 0x050000
+	type = timerType;
+#else
+	type = Qt::CoarseTimer;
+#endif
+
 	Q_D(EventDispatcherLibEvent);
-	d->registerTimer(timerId, interval, object);
+	d->registerTimer(timerId, interval, type, object);
 }
 
 bool EventDispatcherLibEvent::unregisterTimer(int timerId)
@@ -423,6 +476,14 @@ QList<QAbstractEventDispatcher::TimerInfo> EventDispatcherLibEvent::registeredTi
 	Q_D(const EventDispatcherLibEvent);
 	return d->registeredTimers(object);
 }
+
+#if QT_VERSION >= 0x050000
+int EventDispatcherLibEvent::remainingTime(int timerId)
+{
+	Q_D(const EventDispatcherLibEvent);
+	return d->remainingTime(timerId);
+}
+#endif
 
 void EventDispatcherLibEvent::wakeUp(void)
 {

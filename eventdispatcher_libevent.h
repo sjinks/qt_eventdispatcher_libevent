@@ -17,10 +17,21 @@ public:
 	virtual void registerSocketNotifier(QSocketNotifier* notifier);
 	virtual void unregisterSocketNotifier(QSocketNotifier* notifier);
 
-	virtual void registerTimer(int timerId, int interval, QObject* object);
+	virtual void registerTimer(
+		int timerId,
+		int interval,
+#if QT_VERSION >= 0x050000
+		Qt::TimerType timerType,
+#endif
+		QObject* object
+	);
+
 	virtual bool unregisterTimer(int timerId);
 	virtual bool unregisterTimers(QObject* object);
 	virtual QList<QAbstractEventDispatcher::TimerInfo> registeredTimers(QObject* object) const;
+#if QT_VERSION >= 0x050000
+	virtual int remainingTime(int timerId);
+#endif
 
 	virtual void wakeUp(void);
 	virtual void interrupt(void);
