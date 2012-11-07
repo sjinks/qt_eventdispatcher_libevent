@@ -256,7 +256,15 @@ QList<QAbstractEventDispatcher::TimerInfo> EventDispatcherLibEventPrivate::regis
 	while (it != this->m_timers.constEnd()) {
 		EventDispatcherLibEventPrivate::TimerInfo* info = it.value();
 		if (object == info->object) {
+#if QT_VERSION < 0x050000
 			QAbstractEventDispatcher::TimerInfo ti(it.key(), info->interval);
+#else
+			QAbstractEventDispatcher::TimerInfo ti(
+				it.key(),
+				((Qt::VeryCoarseTimer == info->type ? info->interval * 1000 : info->interval)),
+				info->type
+			);
+#endif
 			res.append(ti);
 			++it;
 		}
