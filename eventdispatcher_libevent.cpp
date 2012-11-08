@@ -5,7 +5,12 @@
 #include <QtCore/QSocketNotifier>
 #include <QtCore/QThread>
 #include <event2/event.h>
+#include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
+#ifdef HAVE_SYS_EVENTFD_H
+#	include <sys/eventfd.h>
+#endif
 #include "eventdispatcher_libevent.h"
 
 #if QT_VERSION <= 0x050000
@@ -18,11 +23,67 @@ namespace Qt { // Sorry
 }
 #endif
 
-static int make_pipe(int pipefd[2])
+#if defined(EFD_CLOEXEC) && defined(EFD_NONBLOCK)
+#	define MY_EFD_CLOEXEC  EFD_CLOEXEC
+#	define MY_EFD_NONBLOCK EFD_NONBLOCK
+#else
+#	define MY_EFD_CLOEXEC  0
+#	define MY_EFD_NONBLOCK 0
+#endif
+
+#if defined(Q_OS_LINUX) && defined(O_CLOEXEC)
+#	define THREADSAFE_CLOEXEC_SUPPORTED 1
+namespace libcsupplement {
+	inline int pipe2(int[], int) { errno = ENOSYS; return -1; }
+}
+
+using namespace libcsupplement;
+#else
+#	define THREADSAFE_CLOEXEC_SUPPORTED 0
+#endif
+
+static int make_tco(int* readfd, int* writefd)
 {
-	int res = ::pipe(pipefd);
+	Q_ASSERT(readfd != 0 && writefd != 0);
+
+#ifdef HAVE_SYS_EVENTFD_H
+	int flags = MY_EFD_CLOEXEC | MY_EFD_NONBLOCK;
+	int res   = eventfd(0, flags);
+
 	if (-1 == res) {
+		if (EINVAL == errno && flags) {
+			res = eventfd(0, 0);
+			if (res != -1) {
+				evutil_make_socket_closeonexec(res);
+				evutil_make_socket_nonblocking(res);
+			}
+		}
+	}
+
+	*readfd  = res;
+	*writefd = res;
+	return res;
+#else
+	int pipefd[2];
+	int res;
+
+	*readfd  = -1;
+	*writefd = -1;
+#if THREADSAFE_CLOEXEC_SUPPORTED
+	res = ::pipe2(pipefd, O_CLOEXEC | O_NONBLOCK);
+	if (res != -1 || errno != ENOSYS) {
+		if (res != -1) {
+			*readfd  = pipefd[0];
+			*writefd = pipefd[1];
+		}
+
 		return res;
+	}
+#endif
+	res = ::pipe(pipefd);
+
+	if (-1 == res) {
+		return -1;
 	}
 
 	evutil_make_socket_closeonexec(pipefd[0]);
@@ -31,8 +92,15 @@ static int make_pipe(int pipefd[2])
 	evutil_make_socket_closeonexec(pipefd[1]);
 	evutil_make_socket_nonblocking(pipefd[1]);
 
-	return 0;
+	*readfd  = pipefd[0];
+	*writefd = pipefd[1];
+	return res;
+#endif // HAVE_SYS_EVENTFD_H
 }
+
+#undef MY_EFD_CLOEXEC
+#undef MY_EFD_NONBLOCK
+#undef THREADSAFE_CLOEXEC_SUPPORTED
 
 class EventDispatcherLibEventPrivate {
 public:
@@ -71,7 +139,8 @@ private:
 	EventDispatcherLibEvent* const q_ptr;
 
 	bool m_interrupt;
-	int m_thread_pipe[2];
+	int m_pipe_read;
+	int m_pipe_write;
 	struct event_base* m_base;
 	struct event* m_wakeup;
 	SocketNotifierHash m_notifiers;
@@ -83,36 +152,30 @@ private:
 };
 
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q)
-	: q_ptr(q), m_interrupt(false), m_thread_pipe(), m_base(0), m_wakeup(0),
+	: q_ptr(q), m_interrupt(false), m_pipe_read(), m_pipe_write(), m_base(0), m_wakeup(0),
 	  m_notifiers(), m_timers()
 {
 	this->m_base = event_base_new();
 
-	if (-1 == make_pipe(this->m_thread_pipe)) {
-#ifndef QT_NO_DEBUG
-		qFatal("%s: Unable to create pipe", Q_FUNC_INFO);
-#else
-		qErrnoWarning("%s: Unable to create pipe", Q_FUNC_INFO);
-#endif
-
-		m_thread_pipe[0] = -1;
-		m_thread_pipe[1] = -1;
+	if (-1 == make_tco(&this->m_pipe_read, &this->m_pipe_write)) {
+		qFatal("%s: Fatal: Unable to create thread communication object", Q_FUNC_INFO);
 	}
 	else {
-		this->m_wakeup = event_new(this->m_base, this->m_thread_pipe[0], EV_READ | EV_PERSIST, EventDispatcherLibEventPrivate::wake_up_handler, 0);
+		this->m_wakeup = event_new(this->m_base, this->m_pipe_read, EV_READ | EV_PERSIST, EventDispatcherLibEventPrivate::wake_up_handler, 0);
 		event_add(this->m_wakeup, 0);
 	}
 }
 
 EventDispatcherLibEventPrivate::~EventDispatcherLibEventPrivate(void)
 {
-	if (this->m_thread_pipe[0] != -1) {
-		evutil_closesocket(this->m_thread_pipe[0]);
-	}
 
-	if (this->m_thread_pipe[1] != -1) {
-		evutil_closesocket(this->m_thread_pipe[1]);
-	}
+#ifdef HAVE_SYS_EVENTFD_H
+	Q_ASSERT(this->m_pipe_read == this->m_pipe_write);
+#else
+	evutil_closesocket(this->m_pipe_write);
+#endif
+
+	evutil_closesocket(this->m_pipe_read);
 
 	if (this->m_wakeup) {
 		event_del(this->m_wakeup);
@@ -332,10 +395,17 @@ void EventDispatcherLibEventPrivate::wake_up_handler(int fd, short int events, v
 	Q_UNUSED(events)
 	Q_UNUSED(arg)
 
+#ifdef HAVE_SYS_EVENTFD_H
+	char buf[8];
+	if (::read(fd, buf, 8) != 8) {
+		qErrnoWarning("%s: read failed", Q_FUNC_INFO);
+	}
+#else
 	char buf[256];
 	while (::read(fd, buf, 256) > 0) {
 		// Do nothing
 	}
+#endif
 }
 
 
@@ -496,10 +566,9 @@ void EventDispatcherLibEvent::wakeUp(void)
 {
 	Q_D(EventDispatcherLibEvent);
 
-	if (d->m_thread_pipe[1] != -1) {
-		if (::write(d->m_thread_pipe[1], "w", 1) != 1) {
-			// Avoid compiler's warning
-		}
+	quint64 x = 1;
+	if (::write(d->m_pipe_write, reinterpret_cast<const char*>(&x), sizeof(x)) != sizeof(x)) {
+		qErrnoWarning("%s: write failed", Q_FUNC_INFO);
 	}
 }
 
