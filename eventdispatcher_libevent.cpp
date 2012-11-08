@@ -5,7 +5,6 @@
 #include <QtCore/QSocketNotifier>
 #include <QtCore/QThread>
 #include <event2/event.h>
-#include <event2/thread.h>
 #include <unistd.h>
 #include "eventdispatcher_libevent.h"
 
