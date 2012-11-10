@@ -367,6 +367,8 @@ int EventDispatcherLibEventPrivate::remainingTime(int timerId)
 
 void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int events, void* arg)
 {
+	QList<QSocketNotifier*> list;
+
 	EventDispatcherLibEventPrivate* disp = reinterpret_cast<EventDispatcherLibEventPrivate*>(arg);
 	SocketNotifierHash::Iterator it = disp->m_notifiers.find(fd);
 	while (it != disp->m_notifiers.end() && it.key() == fd) {
@@ -374,11 +376,17 @@ void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int 
 		QSocketNotifier::Type type = data.sn->type();
 
 		if ((QSocketNotifier::Read == type && (events & EV_READ)) || (QSocketNotifier::Write == type && (events & EV_WRITE))) {
-			QEvent e(QEvent::SockAct);
-			QCoreApplication::sendEvent(data.sn, &e);
+			list.append(data.sn);
 		}
 
 		++it;
+	}
+
+	if (list.size()) {
+		QEvent e(QEvent::SockAct);
+		for (int i=0; i<list.size(); ++i) {
+			QCoreApplication::sendEvent(list.at(i), &e);
+		}
 	}
 }
 
