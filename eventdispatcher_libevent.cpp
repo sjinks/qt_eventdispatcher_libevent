@@ -172,10 +172,14 @@ EventDispatcherLibEventPrivate::~EventDispatcherLibEventPrivate(void)
 #ifdef HAVE_SYS_EVENTFD_H
 	Q_ASSERT(this->m_pipe_read == this->m_pipe_write);
 #else
-	evutil_closesocket(this->m_pipe_write);
+	if (-1 != this->m_pipe_write) {
+		evutil_closesocket(this->m_pipe_write);
+	}
 #endif
 
-	evutil_closesocket(this->m_pipe_read);
+	if (-1 != this->m_pipe_read) {
+		evutil_closesocket(this->m_pipe_read);
+	}
 
 	if (this->m_wakeup) {
 		event_del(this->m_wakeup);
