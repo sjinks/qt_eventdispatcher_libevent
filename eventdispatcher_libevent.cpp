@@ -512,12 +512,12 @@ bool EventDispatcherLibEvent::unregisterTimer(int timerId)
 #ifndef QT_NO_DEBUG
 	if (timerId < 1) {
 		qWarning("%s: invalid arguments", Q_FUNC_INFO);
-		return;
+		return false;
 	}
 
 	if (this->thread() != QThread::currentThread()) {
 		qWarning("%s: timers cannot be stopped from another thread", Q_FUNC_INFO);
-		return;
+		return false;
 	}
 #endif
 
@@ -530,12 +530,12 @@ bool EventDispatcherLibEvent::unregisterTimers(QObject* object)
 #ifndef QT_NO_DEBUG
 	if (!object) {
 		qWarning("%s: invalid arguments", Q_FUNC_INFO);
-		return;
+		return false;
 	}
 
 	if (object->thread() != this->thread() && this->thread() != QThread::currentThread()) {
 		qWarning("%s: timers cannot be stopped from another thread", Q_FUNC_INFO);
-		return;
+		return false;
 	}
 #endif
 
