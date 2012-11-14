@@ -337,8 +337,9 @@ QList<QAbstractEventDispatcher::TimerInfo> EventDispatcherLibEventPrivate::regis
 			QAbstractEventDispatcher::TimerInfo ti(it.key(), info->interval, info->type);
 #endif
 			res.append(ti);
-			++it;
 		}
+
+		++it;
 	}
 
 	return res;
