@@ -115,7 +115,6 @@ public:
 	QList<QAbstractEventDispatcher::TimerInfo> registeredTimers(QObject* object) const;
 	int remainingTime(int timerId) const;
 
-
 	struct SocketNotifierInfo {
 		QSocketNotifier* sn;
 		struct event* ev;
@@ -145,6 +144,7 @@ private:
 	struct event* m_wakeup;
 	SocketNotifierHash m_notifiers;
 	TimerHash m_timers;
+	bool m_seen_event;
 
 	static void socket_notifier_callback(evutil_socket_t fd, short int events, void* arg);
 	static void timer_callback(evutil_socket_t fd, short int events, void* arg);
@@ -153,7 +153,7 @@ private:
 
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q)
 	: q_ptr(q), m_interrupt(false), m_pipe_read(), m_pipe_write(), m_base(0), m_wakeup(0),
-	  m_notifiers(), m_timers()
+	  m_notifiers(), m_timers(), m_seen_event(false)
 {
 	this->m_base = event_base_new();
 
@@ -197,25 +197,34 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 {
 	Q_Q(EventDispatcherLibEvent);
 
-	Q_EMIT q->awake();
-	QCoreApplication::sendPostedEvents();
-
-	const bool canWait = (!this->m_interrupt && (flags & QEventLoop::WaitForMoreEvents));
-
-	do {
+	int evflags  = EVLOOP_ONCE;
+	bool canWait = (!this->m_interrupt && (flags & QEventLoop::WaitForMoreEvents) && !q->hasPendingEvents());
 		if (canWait) {
 			Q_EMIT q->aboutToBlock();
-			event_base_loop(this->m_base, EVLOOP_ONCE);
 		}
 		else {
-			event_base_loop(this->m_base, EVLOOP_NONBLOCK | EVLOOP_ONCE);
+		Q_EMIT q->awake();
+		evflags |= EVLOOP_NONBLOCK;
+	}
+
+	this->m_seen_event = false;
+	if (q->hasPendingEvents()) {
+		QCoreApplication::sendPostedEvents();
+		this->m_seen_event = true;
 		}
 
+	do {
+		event_base_loop(this->m_base, evflags);
 		QCoreApplication::sendPostedEvents();
-	} while (!this->m_interrupt && !canWait);
+	} while (!this->m_interrupt && canWait && !this->m_seen_event);
 
 	this->m_interrupt = false;
-	return true;
+
+	if (canWait) {
+		Q_EMIT q->awake();
+	}
+
+	return this->m_seen_event;
 }
 
 void EventDispatcherLibEventPrivate::registerSocketNotifier(QSocketNotifier* notifier)
@@ -378,6 +387,8 @@ void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int 
 		++it;
 	}
 
+	disp->m_seen_event = true;
+
 	if (list.size()) {
 		QEvent e(QEvent::SockAct);
 		for (int i=0; i<list.size(); ++i) {
@@ -394,6 +405,8 @@ void EventDispatcherLibEventPrivate::timer_callback(int fd, short int events, vo
 	Q_UNUSED(events)
 
 	EventDispatcherLibEventPrivate::TimerInfo* info = reinterpret_cast<EventDispatcherLibEventPrivate::TimerInfo*>(arg);
+	info->self->m_seen_event = true;
+
 	QTimerEvent event(info->timerId);
 	QCoreApplication::sendEvent(info->object, &event);
 }
