@@ -13,7 +13,7 @@
 #endif
 #include "eventdispatcher_libevent.h"
 
-#if QT_VERSION <= 0x050000
+#if QT_VERSION < 0x050000
 namespace Qt { // Sorry
 	enum TimerType {
 		PreciseTimer,
@@ -113,7 +113,7 @@ public:
 	bool unregisterTimer(int timerId);
 	bool unregisterTimers(QObject* object);
 	QList<QAbstractEventDispatcher::TimerInfo> registeredTimers(QObject* object) const;
-	int remainingTime(int timerId);
+	int remainingTime(int timerId) const;
 
 
 	struct SocketNotifierInfo {
@@ -335,11 +335,11 @@ QList<QAbstractEventDispatcher::TimerInfo> EventDispatcherLibEventPrivate::regis
 	return res;
 }
 
-int EventDispatcherLibEventPrivate::remainingTime(int timerId)
+int EventDispatcherLibEventPrivate::remainingTime(int timerId) const
 {
-	TimerHash::Iterator it = this->m_timers.find(timerId);
+	TimerHash::ConstIterator it = this->m_timers.find(timerId);
 	if (it != this->m_timers.end()) {
-		EventDispatcherLibEventPrivate::TimerInfo* info = it.value();
+		const EventDispatcherLibEventPrivate::TimerInfo* info = it.value();
 		struct timeval when;
 		struct timeval now;
 
