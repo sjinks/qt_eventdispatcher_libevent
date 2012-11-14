@@ -346,8 +346,8 @@ int EventDispatcherLibEventPrivate::remainingTime(int timerId)
 		event_base_gettimeofday_cached(this->m_base, &now);
 		int r = event_pending(info->ev, EV_TIMEOUT, &when);
 		if (r) {
-			ulong tnow  = now.tv_sec  + now.tv_usec  * 1000000;
-			ulong twhen = when.tv_sec + when.tv_usec * 1000000;
+			qulonglong tnow  = qulonglong(now.tv_sec)  * 1000000 + now.tv_usec;
+			qulonglong twhen = qulonglong(when.tv_sec) * 1000000 + when.tv_usec;
 
 			if (tnow > twhen) {
 				return 0;
