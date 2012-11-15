@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
-#ifdef HAVE_SYS_EVENTFD_H
+#if defined(HAVE_SYS_EVENTFD_H) || (defined(__GLIBC_PREREQ) && __GLIBC_PREREQ(2, 8))
 #	include <sys/eventfd.h>
 #endif
 #include "eventdispatcher_libevent.h"
