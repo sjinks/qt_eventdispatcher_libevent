@@ -373,8 +373,6 @@ int EventDispatcherLibEventPrivate::remainingTime(int timerId) const
 
 void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int events, void* arg)
 {
-	QList<QSocketNotifier*> list;
-
 	EventDispatcherLibEventPrivate* disp = reinterpret_cast<EventDispatcherLibEventPrivate*>(arg);
 	SocketNotifierHash::Iterator it = disp->m_notifiers.find(fd);
 	while (it != disp->m_notifiers.end() && it.key() == fd) {
@@ -382,20 +380,14 @@ void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int 
 		QSocketNotifier::Type type = data.sn->type();
 
 		if ((QSocketNotifier::Read == type && (events & EV_READ)) || (QSocketNotifier::Write == type && (events & EV_WRITE))) {
-			list.append(data.sn);
+			QEvent e = new QEvent(QEvent::SockAct);
+			QCoreApplication::postEvent(data.sn, e);
 		}
 
 		++it;
 	}
 
 	disp->m_seen_event = true;
-
-	if (list.size()) {
-		QEvent e(QEvent::SockAct);
-		for (int i=0; i<list.size(); ++i) {
-			QCoreApplication::sendEvent(list.at(i), &e);
-		}
-	}
 }
 
 void EventDispatcherLibEventPrivate::timer_callback(int fd, short int events, void* arg)
@@ -408,8 +400,8 @@ void EventDispatcherLibEventPrivate::timer_callback(int fd, short int events, vo
 	EventDispatcherLibEventPrivate::TimerInfo* info = reinterpret_cast<EventDispatcherLibEventPrivate::TimerInfo*>(arg);
 	info->self->m_seen_event = true;
 
-	QTimerEvent event(info->timerId);
-	QCoreApplication::sendEvent(info->object, &event);
+	QTimerEvent event = new QTimerEvent(info->timerId);
+	QCoreApplication::postEvent(info->object, event);
 }
 
 void EventDispatcherLibEventPrivate::wake_up_handler(int fd, short int events, void* arg)
