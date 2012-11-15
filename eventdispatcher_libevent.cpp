@@ -149,6 +149,7 @@ private:
 	static void socket_notifier_callback(evutil_socket_t fd, short int events, void* arg);
 	static void timer_callback(evutil_socket_t fd, short int events, void* arg);
 	static void wake_up_handler(evutil_socket_t fd, short int events, void* arg);
+	void disableSocketNotifiers(bool disable);
 };
 
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q)
@@ -197,6 +198,12 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 {
 	Q_Q(EventDispatcherLibEvent);
 
+	bool exclude_notifiers = (flags & QEventLoop::ExcludeSocketNotifiers);
+
+	if (exclude_notifiers) {
+		this->disableSocketNotifiers(true);
+	}
+
 	int evflags  = EVLOOP_ONCE;
 	bool canWait = (!this->m_interrupt && (flags & QEventLoop::WaitForMoreEvents) && !q->hasPendingEvents());
 	if (canWait) {
@@ -218,12 +225,15 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 		QCoreApplication::sendPostedEvents();
 	} while (!this->m_interrupt && canWait && !this->m_seen_event);
 
-	this->m_interrupt = false;
-
 	if (canWait) {
 		Q_EMIT q->awake();
 	}
 
+	if (exclude_notifiers) {
+		this->disableSocketNotifiers(false);
+	}
+
+	this->m_interrupt = false;
 	return this->m_seen_event;
 }
 
@@ -422,6 +432,15 @@ void EventDispatcherLibEventPrivate::wake_up_handler(int fd, short int events, v
 #endif
 }
 
+void EventDispatcherLibEventPrivate::disableSocketNotifiers(bool disable)
+{
+	SocketNotifierHash::Iterator it = this->m_notifiers.begin();
+	while (it != this->m_notifiers.end()) {
+		SocketNotifierInfo& data = it.value();
+		disable ? event_del(data.ev) : event_add(data.ev, 0);
+		++it;
+	}
+}
 
 
 
