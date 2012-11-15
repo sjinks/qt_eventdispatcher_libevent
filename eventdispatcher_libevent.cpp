@@ -199,10 +199,10 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 
 	int evflags  = EVLOOP_ONCE;
 	bool canWait = (!this->m_interrupt && (flags & QEventLoop::WaitForMoreEvents) && !q->hasPendingEvents());
-		if (canWait) {
-			Q_EMIT q->aboutToBlock();
-		}
-		else {
+	if (canWait) {
+		Q_EMIT q->aboutToBlock();
+	}
+	else {
 		Q_EMIT q->awake();
 		evflags |= EVLOOP_NONBLOCK;
 	}
@@ -211,7 +211,7 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 	if (q->hasPendingEvents()) {
 		QCoreApplication::sendPostedEvents();
 		this->m_seen_event = true;
-		}
+	}
 
 	do {
 		event_base_loop(this->m_base, evflags);
