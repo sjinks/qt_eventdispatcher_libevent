@@ -584,6 +584,8 @@ void EventDispatcherLibEvent::wakeUp(void)
 	if (::write(d->m_pipe_write, reinterpret_cast<const char*>(&x), sizeof(x)) != sizeof(x)) {
 		qErrnoWarning("%s: write failed", Q_FUNC_INFO);
 	}
+
+	d->m_seen_event = true;
 }
 
 void EventDispatcherLibEvent::interrupt(void)
