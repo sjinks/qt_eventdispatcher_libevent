@@ -410,7 +410,7 @@ void EventDispatcherLibEventPrivate::timer_callback(int fd, short int events, vo
 	EventDispatcherLibEventPrivate::TimerInfo* info = reinterpret_cast<EventDispatcherLibEventPrivate::TimerInfo*>(arg);
 	info->self->m_seen_event = true;
 
-	QTimerEvent event = new QTimerEvent(info->timerId);
+	QTimerEvent* event = new QTimerEvent(info->timerId);
 	QCoreApplication::postEvent(info->object, event);
 }
 
