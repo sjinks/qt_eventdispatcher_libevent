@@ -410,7 +410,7 @@ void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int 
 		QSocketNotifier::Type type = data.sn->type();
 
 		if ((QSocketNotifier::Read == type && (events & EV_READ)) || (QSocketNotifier::Write == type && (events & EV_WRITE))) {
-			QEvent e = new QEvent(QEvent::SockAct);
+			QEvent* e = new QEvent(QEvent::SockAct);
 			QCoreApplication::postEvent(data.sn, e);
 		}
 
