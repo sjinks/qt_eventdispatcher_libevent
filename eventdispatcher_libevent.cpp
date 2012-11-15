@@ -12,6 +12,9 @@
 #	include <sys/eventfd.h>
 #endif
 #include "eventdispatcher_libevent.h"
+#if QT_VERSION >= 0x050000
+#	include <event2/thread.h>
+#endif
 
 #if QT_VERSION < 0x050000
 namespace Qt { // Sorry
@@ -41,6 +44,15 @@ using namespace libcsupplement;
 #else
 #	define THREADSAFE_CLOEXEC_SUPPORTED 0
 #endif
+
+static void event_log_callback(int severity, const char* msg)
+{
+	switch (severity) {
+		case _EVENT_LOG_WARN: qWarning("%s", msg); break;
+		case _EVENT_LOG_ERR:  qCritical("%s", msg); break;
+		default:              qDebug("%s", msg); break;
+	}
+}
 
 static int make_tco(int* readfd, int* writefd)
 {
@@ -156,6 +168,15 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 	: q_ptr(q), m_interrupt(false), m_pipe_read(), m_pipe_write(), m_base(0), m_wakeup(0),
 	  m_notifiers(), m_timers(), m_seen_event(false)
 {
+	static bool init = false;
+	if (!init) {
+		init = true;
+		event_set_log_callback(event_log_callback);
+#if QT_VERSION >= 0x050000
+		evthread_use_pthreads();
+#endif
+	}
+
 	this->m_base = event_base_new();
 
 	if (-1 == make_tco(&this->m_pipe_read, &this->m_pipe_write)) {
@@ -169,7 +190,6 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 
 EventDispatcherLibEventPrivate::~EventDispatcherLibEventPrivate(void)
 {
-
 #ifdef HAVE_SYS_EVENTFD_H
 	Q_ASSERT(this->m_pipe_read == this->m_pipe_write);
 #else
