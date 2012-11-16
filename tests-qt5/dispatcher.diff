@@ -1,0 +1,41 @@
+diff -uwd qeventdispatcher/qeventdispatcher.pro dispatcher/qeventdispatcher.pro
+--- qeventdispatcher/qeventdispatcher.pro	2012-10-22 10:52:20.000000000 +0300
++++ dispatcher/qeventdispatcher.pro	2012-11-16 07:14:29.595252351 +0200
+@@ -3,3 +3,6 @@
+ QT = core testlib
+ SOURCES += tst_qeventdispatcher.cpp
+ DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
++
++DESTDIR    = ../
++include(../common.pri)
+diff -uwd qeventdispatcher/tst_qeventdispatcher.cpp dispatcher/tst_qeventdispatcher.cpp
+--- qeventdispatcher/tst_qeventdispatcher.cpp	2012-10-22 10:48:44.000000000 +0300
++++ dispatcher/tst_qeventdispatcher.cpp	2012-11-15 23:54:54.292244857 +0200
+@@ -39,12 +39,9 @@
+ **
+ ****************************************************************************/
+ 
+-#ifdef QT_GUI_LIB
+-#  include <QtGui/QGuiApplication>
+-#else
+ #  include <QtCore/QCoreApplication>
+-#endif
+ #include <QtTest/QtTest>
++#include "eventdispatcher_libevent.h"
+ 
+ enum {
+     PreciseTimerInterval    =   10,
+@@ -209,5 +206,12 @@
+     }
+ }
+ 
+-QTEST_MAIN(tst_QEventDispatcher)
+ #include "tst_qeventdispatcher.moc"
++
++int main(int argc, char** argv)
++{
++    QCoreApplication::setEventDispatcher(new EventDispatcherLibEvent);
++    QCoreApplication app(argc, argv);
++    tst_QEventDispatcher t;
++    return QTest::qExec(&t, argc, argv);
++}
