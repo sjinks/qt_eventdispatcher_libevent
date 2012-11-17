@@ -2,6 +2,7 @@
 #include <QtCore/QEvent>
 #include <QtCore/QHash>
 #include <QtCore/QMultiHash>
+#include <QtCore/QSet>
 #include <QtCore/QSocketNotifier>
 #include <QtCore/QThread>
 #include <event2/event.h>
@@ -158,6 +159,7 @@ private:
 	struct event* m_wakeup;
 	SocketNotifierHash m_notifiers;
 	TimerHash m_timers;
+	QSet<int> m_timers_to_reactivate;
 	bool m_seen_event;
 
 	static void socket_notifier_callback(evutil_socket_t fd, short int events, void* arg);
@@ -326,7 +328,7 @@ static void calculateNextTimeout(EventDispatcherLibEventPrivate::TimerInfo* info
 
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q)
 	: q_ptr(q), m_interrupt(false), m_pipe_read(), m_pipe_write(), m_base(0), m_wakeup(0),
-	  m_notifiers(), m_timers(), m_seen_event(false)
+	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_seen_event(false)
 {
 	static bool init = false;
 	if (!init) {
@@ -378,6 +380,8 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 {
 	Q_Q(EventDispatcherLibEvent);
 
+	Q_ASSERT(this->m_timers_to_reactivate.isEmpty());
+
 	bool exclude_notifiers = (flags & QEventLoop::ExcludeSocketNotifiers);
 	bool exclude_timers    = (flags & QEventLoop::X11ExcludeTimers);
 
@@ -398,16 +402,22 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 		flags &= ~QEventLoop::WaitForMoreEvents;
 	}
 
+	QSet<int> timers;
+
 	if ((flags & QEventLoop::WaitForMoreEvents)) {
 		if (!this->m_interrupt) {
 			this->m_seen_event = false;
 			do {
 				Q_EMIT q->aboutToBlock();
 				event_base_loop(this->m_base, EVLOOP_ONCE);
+
+				timers.unite(this->m_timers_to_reactivate);
+				this->m_timers_to_reactivate.clear();
+
 				if (!this->m_seen_event) {
 					// When this->m_seen_event == false, this means we have been woken up by wake().
 					// Send all potsed events here or tst_QEventLoop::execAfterExit() freezes
-					QCoreApplication::sendPostedEvents();
+					QCoreApplication::sendPostedEvents(); // an event handler invoked by sendPostedEvents() may invoke processEvents() again
 				}
 
 				Q_EMIT q->awake();
@@ -420,8 +430,32 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 		result |= this->m_seen_event;
 	}
 
+	timers.unite(this->m_timers_to_reactivate);
+	this->m_timers_to_reactivate.clear();
+
 	result |= this->m_seen_event;
-	QCoreApplication::sendPostedEvents();
+	QCoreApplication::sendPostedEvents(); // an event handler invoked by sendPostedEvents() may invoke processEvents() again
+
+	// Now that all event handlers have finished (and we returned from the recusrion), reactivate all pending timers
+	if (!timers.isEmpty()) {
+		struct timeval now;
+		struct timeval delta;
+		evutil_gettimeofday(&now, 0);
+		QSet<int>::ConstIterator it = timers.constBegin();
+		while (it != timers.constEnd()) {
+			TimerHash::Iterator tit = this->m_timers.find(*it);
+			if (tit != this->m_timers.end()) {
+				EventDispatcherLibEventPrivate::TimerInfo* info = tit.value();
+
+				if (!event_pending(info->ev, EV_TIMEOUT, 0)) { // false in tst_QTimer::restartedTimerFiresTooSoon()
+					calculateNextTimeout(info, now, delta);
+					event_add(info->ev, &delta);
+				}
+			}
+
+			++it;
+		}
+	}
 
 	if (exclude_notifiers) {
 		this->disableSocketNotifiers(false);
@@ -618,12 +652,8 @@ void EventDispatcherLibEventPrivate::timer_callback(int fd, short int events, vo
 	EventDispatcherLibEventPrivate::TimerInfo* info = reinterpret_cast<EventDispatcherLibEventPrivate::TimerInfo*>(arg);
 	info->self->m_seen_event = true;
 
-	struct timeval now;
-	struct timeval delta;
-	evutil_gettimeofday(&now, 0);
-	calculateNextTimeout(info, now, delta);
-
-	event_add(info->ev, &delta);
+	// Timer can be reactivated only after its callback finishes; processEvents() will take care of this
+	info->self->m_timers_to_reactivate.insert(info->timerId);
 
 	QTimerEvent* event = new QTimerEvent(info->timerId);
 	QCoreApplication::postEvent(info->object, event);
