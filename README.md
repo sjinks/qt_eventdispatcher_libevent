@@ -81,6 +81,6 @@ DEFINES += HAVE_SYS_EVENTFD_H
 Qt 5 allows to specify a custom event dispatcher for a thread:
 
 ```c++
-QThread* thread = new QThread;
-thread->setEventDispatcher(new EventDispatcherLibEvent);
+QThread* thr = new QThread;
+thr->setEventDispatcher(new EventDispatcherLibEvent);
 ```
