@@ -1,17 +1,18 @@
 qt_eventdispatcher_libevent
 ===========================
 
-An experimental libevent based event dispatcher for Qt
+libevent based event dispatcher for Qt
 
 **Features**
 * very fast :-)
 * `eventfd()` can be used instead of `pipe()` for internal communication (automatically enabled if glibc 2.8 or better is detected; define `HAVE_SYS_EVENTFD_H` to use this feature forcefully)
 * compatibility with Qt4 and Qt 5
 * does not use any private Qt headers
+* passes Qt 5 event dispatcher, event loop, timer and socket notifier tests
 
 **Unsupported features**
 * `QSocketNotifier::Exception` (libevent offers no support for this)
-* undocumented `QCoreApplication::watchUnixSignal()` is not supported (GLib dispatcher does not support it either; it has been removed from Qt 5 anyway)
+* undocumented `QCoreApplication::watchUnixSignal()` is not supported (GLib dispatcher does not support it either; this feature has been removed from Qt 5 anyway)
 
 **Usage (Qt 4):**
 
