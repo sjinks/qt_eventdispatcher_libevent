@@ -383,37 +383,46 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 		this->disableSocketNotifiers(true);
 	}
 
-	int evflags  = EVLOOP_ONCE;
-	bool canWait = (!this->m_interrupt && (flags & QEventLoop::WaitForMoreEvents) && !q->hasPendingEvents());
-	if (canWait) {
-		Q_EMIT q->aboutToBlock();
-	}
-	else {
-		Q_EMIT q->awake();
-		evflags |= EVLOOP_NONBLOCK;
-	}
-
+	bool result = false;
 	this->m_seen_event = false;
+
 	if (q->hasPendingEvents()) {
 		QCoreApplication::sendPostedEvents();
-		this->m_seen_event = true;
+		result = true;
+		flags &= ~QEventLoop::WaitForMoreEvents;
 	}
 
-	do {
-		event_base_loop(this->m_base, evflags);
-		QCoreApplication::sendPostedEvents();
-	} while (!this->m_interrupt && canWait && !this->m_seen_event);
+	if ((flags & QEventLoop::WaitForMoreEvents)) {
+		if (!this->m_interrupt) {
+			this->m_seen_event = false;
+			do {
+				Q_EMIT q->aboutToBlock();
+				event_base_loop(this->m_base, EVLOOP_ONCE);
+				if (!this->m_seen_event) {
+					// When this->m_seen_event == false, this means we have been woken up by wake().
+					// Send all potsed events here or tst_QEventLoop::execAfterExit() freezes
+					QCoreApplication::sendPostedEvents();
+				}
 
-	if (canWait) {
-		Q_EMIT q->awake();
+				Q_EMIT q->awake();
+			} while (!this->m_interrupt && !this->m_seen_event);
+		}
 	}
+	else {
+		event_base_loop(this->m_base, EVLOOP_ONCE | EVLOOP_NONBLOCK);
+		Q_EMIT q->awake(); // If removed, tst_QEventLoop::processEvents() fails
+		result |= this->m_seen_event;
+	}
+
+	result |= this->m_seen_event;
+	QCoreApplication::sendPostedEvents();
 
 	if (exclude_notifiers) {
 		this->disableSocketNotifiers(false);
 	}
 
 	this->m_interrupt = false;
-	return this->m_seen_event;
+	return result;
 }
 
 void EventDispatcherLibEventPrivate::registerSocketNotifier(QSocketNotifier* notifier)
@@ -574,6 +583,7 @@ int EventDispatcherLibEventPrivate::remainingTime(int timerId) const
 void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int events, void* arg)
 {
 	EventDispatcherLibEventPrivate* disp = reinterpret_cast<EventDispatcherLibEventPrivate*>(arg);
+	disp->m_seen_event = true;
 	SocketNotifierHash::Iterator it = disp->m_notifiers.find(fd);
 	while (it != disp->m_notifiers.end() && it.key() == fd) {
 		SocketNotifierInfo& data = it.value();
@@ -586,8 +596,6 @@ void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int 
 
 		++it;
 	}
-
-	disp->m_seen_event = true;
 }
 
 void EventDispatcherLibEventPrivate::timer_callback(int fd, short int events, void* arg)
@@ -598,6 +606,7 @@ void EventDispatcherLibEventPrivate::timer_callback(int fd, short int events, vo
 	Q_UNUSED(events)
 
 	EventDispatcherLibEventPrivate::TimerInfo* info = reinterpret_cast<EventDispatcherLibEventPrivate::TimerInfo*>(arg);
+	info->self->m_seen_event = true;
 
 	struct timeval now;
 	struct timeval delta;
@@ -605,7 +614,6 @@ void EventDispatcherLibEventPrivate::timer_callback(int fd, short int events, vo
 	calculateNextTimeout(info, now, delta);
 
 	event_add(info->ev, &delta);
-	info->self->m_seen_event = true;
 
 	QTimerEvent* event = new QTimerEvent(info->timerId);
 	QCoreApplication::postEvent(info->object, event);
@@ -799,8 +807,6 @@ void EventDispatcherLibEvent::wakeUp(void)
 	if (::write(d->m_pipe_write, reinterpret_cast<const char*>(&x), sizeof(x)) != sizeof(x)) {
 		qErrnoWarning("%s: write failed", Q_FUNC_INFO);
 	}
-
-	d->m_seen_event = true;
 }
 
 void EventDispatcherLibEvent::interrupt(void)
