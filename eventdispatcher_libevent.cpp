@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/time.h>
 #if defined(HAVE_SYS_EVENTFD_H) || (defined(__GLIBC_PREREQ) && __GLIBC_PREREQ(2, 8))
 #	include <sys/eventfd.h>
 #endif
@@ -134,11 +135,12 @@ public:
 
 	struct TimerInfo {
 		EventDispatcherLibEventPrivate* self;
+		QObject* object;
 		struct event* ev;
+		struct timeval when;
 		int timerId;
 		int interval;
 		Qt::TimerType type;
-		QObject* object;
 	};
 
 	typedef QMultiHash<evutil_socket_t, SocketNotifierInfo> SocketNotifierHash;
@@ -161,8 +163,165 @@ private:
 	static void socket_notifier_callback(evutil_socket_t fd, short int events, void* arg);
 	static void timer_callback(evutil_socket_t fd, short int events, void* arg);
 	static void wake_up_handler(evutil_socket_t fd, short int events, void* arg);
+
 	void disableSocketNotifiers(bool disable);
 };
+
+static void calculateCoarseTimerTimeout(EventDispatcherLibEventPrivate::TimerInfo* info, const struct timeval& now, struct timeval& when)
+{
+	Q_ASSERT(info->interval > 20);
+	// The coarse timer works like this:
+	//  - interval under 40 ms: round to even
+	//  - between 40 and 99 ms: round to multiple of 4
+	//  - otherwise: try to wake up at a multiple of 25 ms, with a maximum error of 5%
+	//
+	// We try to wake up at the following second-fraction, in order of preference:
+	//    0 ms
+	//  500 ms
+	//  250 ms or 750 ms
+	//  200, 400, 600, 800 ms
+	//  other multiples of 100
+	//  other multiples of 50
+	//  other multiples of 25
+	//
+	// The objective is to make most timers wake up at the same time, thereby reducing CPU wakeups.
+
+	uint interval     = uint(info->interval);
+	uint msec         = info->when.tv_usec / 1000;
+	uint max_rounding = interval / 20; // 5%
+	when              = info->when;
+
+	if (interval < 100 && (interval % 25) != 0) {
+		if (interval < 50) {
+			uint round_up = ((msec % 50) >= 25) ? 1 : 0;
+			msec = ((msec >> 1) | round_up) << 1;
+		}
+		else {
+			uint round_up = ((msec % 100) >= 50) ? 1 : 0;
+			msec = ((msec >> 2) | round_up) << 2;
+		}
+	}
+	else {
+		uint min = uint(qMax<int>(0, msec - max_rounding));
+		uint max = qMin(1000u, msec + max_rounding);
+
+		bool done = false;
+
+		// take any round-to-the-second timeout
+		if (min == 0) {
+			msec = 0;
+			done = true;
+		}
+		else if (max == 1000) {
+			msec = 1000;
+			done = true;
+		}
+
+		if (!done) {
+			uint boundary;
+
+			// if the interval is a multiple of 500 ms and > 5000 ms, always round towards a round-to-the-second
+			// if the interval is a multiple of 500 ms, round towards the nearest multiple of 500 ms
+			if ((interval % 500) == 0) {
+				if (interval >= 5000) {
+					msec = msec >= 500 ? max : min;
+					done = true;
+				}
+				else {
+					boundary = 500;
+				}
+			}
+			else if ((interval % 50) == 0) {
+				// same for multiples of 250, 200, 100, 50
+				uint tmp = interval / 50;
+				if ((tmp % 4) == 0) {
+					boundary = 200;
+				}
+				else if ((tmp % 2) == 0) {
+					boundary = 100;
+				}
+				else if ((tmp % 5) == 0) {
+					boundary = 250;
+				}
+				else {
+					boundary = 50;
+				}
+			}
+			else {
+				boundary = 25;
+			}
+
+			if (!done) {
+				uint base   = uint(msec / boundary) * boundary;
+				uint middle = base + boundary / 2;
+				msec        = (msec < middle) ? qMax(base, min) : qMin(base + boundary, max);
+			}
+		}
+	}
+
+	if (msec == 1000) {
+		++when.tv_sec;
+		when.tv_usec = 0;
+	}
+	else {
+		when.tv_usec = msec * 1000;
+	}
+
+	if (evutil_timercmp(&when, &now, <)) {
+		when.tv_sec  += interval / 1000;
+		when.tv_usec += (interval % 1000) * 1000;
+		if (when.tv_usec > 999999) {
+			++when.tv_sec;
+			when.tv_usec -= 1000000;
+		}
+	}
+
+	Q_ASSERT(evutil_timercmp(&now, &when, <=));
+}
+
+static void calculateNextTimeout(EventDispatcherLibEventPrivate::TimerInfo* info, const struct timeval& now, struct timeval& delta)
+{
+	struct timeval tv_interval;
+	struct timeval when;
+	tv_interval.tv_sec  = info->interval / 1000;
+	tv_interval.tv_usec = (info->interval % 1000) * 1000;
+
+	if (Qt::VeryCoarseTimer == info->type) {
+		if (info->when.tv_usec >= 500000) {
+			++info->when.tv_sec;
+		}
+
+		info->when.tv_usec = 0;
+		info->when.tv_sec += info->interval / 1000;
+		if (info->when.tv_sec <= now.tv_sec) {
+			info->when.tv_sec = now.tv_sec + info->interval / 1000;
+		}
+
+		when = info->when;
+	}
+	else if (Qt::PreciseTimer == info->type) {
+		if (info->interval) {
+			do {
+				evutil_timeradd(&info->when, &tv_interval, &info->when);
+			} while (evutil_timercmp(&info->when, &now, <));
+
+			when = info->when;
+		}
+		else {
+			when = now;
+		}
+	}
+	else {
+		evutil_timeradd(&info->when, &tv_interval, &info->when);
+		if (evutil_timercmp(&info->when, &now, <)) {
+			evutil_timeradd(&now, &tv_interval, &info->when);
+		}
+
+		calculateCoarseTimerTimeout(info, now, when);
+	}
+
+	evutil_timersub(&when, &now, &delta);
+}
 
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q)
 	: q_ptr(q), m_interrupt(false), m_pipe_read(), m_pipe_write(), m_base(0), m_wakeup(0),
@@ -224,37 +383,46 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 		this->disableSocketNotifiers(true);
 	}
 
-	int evflags  = EVLOOP_ONCE;
-	bool canWait = (!this->m_interrupt && (flags & QEventLoop::WaitForMoreEvents) && !q->hasPendingEvents());
-	if (canWait) {
-		Q_EMIT q->aboutToBlock();
-	}
-	else {
-		Q_EMIT q->awake();
-		evflags |= EVLOOP_NONBLOCK;
-	}
-
+	bool result = false;
 	this->m_seen_event = false;
+
 	if (q->hasPendingEvents()) {
 		QCoreApplication::sendPostedEvents();
-		this->m_seen_event = true;
+		result = true;
+		flags &= ~QEventLoop::WaitForMoreEvents;
 	}
 
-	do {
-		event_base_loop(this->m_base, evflags);
-		QCoreApplication::sendPostedEvents();
-	} while (!this->m_interrupt && canWait && !this->m_seen_event);
+	if ((flags & QEventLoop::WaitForMoreEvents)) {
+		if (!this->m_interrupt) {
+			this->m_seen_event = false;
+			do {
+				Q_EMIT q->aboutToBlock();
+				event_base_loop(this->m_base, EVLOOP_ONCE);
+				if (!this->m_seen_event) {
+					// When this->m_seen_event == false, this means we have been woken up by wake().
+					// Send all potsed events here or tst_QEventLoop::execAfterExit() freezes
+					QCoreApplication::sendPostedEvents();
+				}
 
-	if (canWait) {
-		Q_EMIT q->awake();
+				Q_EMIT q->awake();
+			} while (!this->m_interrupt && !this->m_seen_event);
+		}
 	}
+	else {
+		event_base_loop(this->m_base, EVLOOP_ONCE | EVLOOP_NONBLOCK);
+		Q_EMIT q->awake(); // If removed, tst_QEventLoop::processEvents() fails
+		result |= this->m_seen_event;
+	}
+
+	result |= this->m_seen_event;
+	QCoreApplication::sendPostedEvents();
 
 	if (exclude_notifiers) {
 		this->disableSocketNotifiers(false);
 	}
 
 	this->m_interrupt = false;
-	return this->m_seen_event;
+	return result;
 }
 
 void EventDispatcherLibEventPrivate::registerSocketNotifier(QSocketNotifier* notifier)
@@ -301,21 +469,31 @@ void EventDispatcherLibEventPrivate::unregisterSocketNotifier(QSocketNotifier* n
 
 void EventDispatcherLibEventPrivate::registerTimer(int timerId, int interval, Qt::TimerType type, QObject* object)
 {
-	// TODO: Honor timer type
+	struct timeval now;
+	evutil_gettimeofday(&now, 0);
+
 	EventDispatcherLibEventPrivate::TimerInfo* info = new EventDispatcherLibEventPrivate::TimerInfo;
 	info->self     = this;
-	info->ev       = event_new(this->m_base, -1, EV_PERSIST, EventDispatcherLibEventPrivate::timer_callback, info);
+	info->ev       = event_new(this->m_base, -1, 0, EventDispatcherLibEventPrivate::timer_callback, info);
 	info->timerId  = timerId;
 	info->interval = interval;
 	info->type     = type;
 	info->object   = object;
+	info->when     = now; // calculateNextTimeout() will take care of info->when
 
-	struct timeval tv;
-	// Interval is msec, not usec
-	tv.tv_sec  = interval / 1000;
-	tv.tv_usec = (interval % 1000) * 1000;
-	event_add(info->ev, &tv);
+	if (Qt::CoarseTimer == type) {
+		if (interval >= 20000) {
+			info->type = Qt::VeryCoarseTimer;
+		}
+		else if (interval <= 20) {
+			info->type = Qt::PreciseTimer;
+		}
+	}
 
+	struct timeval delta;
+	calculateNextTimeout(info, now, delta);
+
+	event_add(info->ev, &delta);
 	this->m_timers.insert(timerId, info);
 }
 
@@ -381,11 +559,12 @@ int EventDispatcherLibEventPrivate::remainingTime(int timerId) const
 	if (it != this->m_timers.end()) {
 		const EventDispatcherLibEventPrivate::TimerInfo* info = it.value();
 		struct timeval when;
-		struct timeval now;
 
-		event_base_gettimeofday_cached(this->m_base, &now);
 		int r = event_pending(info->ev, EV_TIMEOUT, &when);
 		if (r) {
+			struct timeval now;
+			event_base_gettimeofday_cached(this->m_base, &now);
+
 			qulonglong tnow  = qulonglong(now.tv_sec)  * 1000000 + now.tv_usec;
 			qulonglong twhen = qulonglong(when.tv_sec) * 1000000 + when.tv_usec;
 
@@ -404,6 +583,7 @@ int EventDispatcherLibEventPrivate::remainingTime(int timerId) const
 void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int events, void* arg)
 {
 	EventDispatcherLibEventPrivate* disp = reinterpret_cast<EventDispatcherLibEventPrivate*>(arg);
+	disp->m_seen_event = true;
 	SocketNotifierHash::Iterator it = disp->m_notifiers.find(fd);
 	while (it != disp->m_notifiers.end() && it.key() == fd) {
 		SocketNotifierInfo& data = it.value();
@@ -416,8 +596,6 @@ void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int 
 
 		++it;
 	}
-
-	disp->m_seen_event = true;
 }
 
 void EventDispatcherLibEventPrivate::timer_callback(int fd, short int events, void* arg)
@@ -429,6 +607,13 @@ void EventDispatcherLibEventPrivate::timer_callback(int fd, short int events, vo
 
 	EventDispatcherLibEventPrivate::TimerInfo* info = reinterpret_cast<EventDispatcherLibEventPrivate::TimerInfo*>(arg);
 	info->self->m_seen_event = true;
+
+	struct timeval now;
+	struct timeval delta;
+	evutil_gettimeofday(&now, 0);
+	calculateNextTimeout(info, now, delta);
+
+	event_add(info->ev, &delta);
 
 	QTimerEvent* event = new QTimerEvent(info->timerId);
 	QCoreApplication::postEvent(info->object, event);
@@ -461,7 +646,6 @@ void EventDispatcherLibEventPrivate::disableSocketNotifiers(bool disable)
 		++it;
 	}
 }
-
 
 
 EventDispatcherLibEvent::EventDispatcherLibEvent(QObject* parent)
@@ -623,8 +807,6 @@ void EventDispatcherLibEvent::wakeUp(void)
 	if (::write(d->m_pipe_write, reinterpret_cast<const char*>(&x), sizeof(x)) != sizeof(x)) {
 		qErrnoWarning("%s: write failed", Q_FUNC_INFO);
 	}
-
-	d->m_seen_event = true;
 }
 
 void EventDispatcherLibEvent::interrupt(void)
