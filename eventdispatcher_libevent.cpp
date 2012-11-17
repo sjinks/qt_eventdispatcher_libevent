@@ -165,6 +165,7 @@ private:
 	static void wake_up_handler(evutil_socket_t fd, short int events, void* arg);
 
 	void disableSocketNotifiers(bool disable);
+	void disableTimers(bool disable);
 };
 
 static void calculateCoarseTimerTimeout(EventDispatcherLibEventPrivate::TimerInfo* info, const struct timeval& now, struct timeval& when)
@@ -378,9 +379,14 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 	Q_Q(EventDispatcherLibEvent);
 
 	bool exclude_notifiers = (flags & QEventLoop::ExcludeSocketNotifiers);
+	bool exclude_timers    = (flags & QEventLoop::X11ExcludeTimers);
 
 	if (exclude_notifiers) {
 		this->disableSocketNotifiers(true);
+	}
+
+	if (exclude_timers) {
+		this->disableTimers(true);
 	}
 
 	bool result = false;
@@ -419,6 +425,10 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 
 	if (exclude_notifiers) {
 		this->disableSocketNotifiers(false);
+	}
+
+	if (exclude_timers) {
+		this->disableTimers(false);
 	}
 
 	this->m_interrupt = false;
@@ -643,6 +653,29 @@ void EventDispatcherLibEventPrivate::disableSocketNotifiers(bool disable)
 	while (it != this->m_notifiers.end()) {
 		SocketNotifierInfo& data = it.value();
 		disable ? event_del(data.ev) : event_add(data.ev, 0);
+		++it;
+	}
+}
+
+void EventDispatcherLibEventPrivate::disableTimers(bool disable)
+{
+	struct timeval now;
+	if (!disable) {
+		evutil_gettimeofday(&now, 0);
+	}
+
+	TimerHash::Iterator it = this->m_timers.begin();
+	while (it != this->m_timers.end()) {
+		EventDispatcherLibEventPrivate::TimerInfo* info = it.value();
+		if (disable) {
+			event_del(info->ev);
+		}
+		else {
+			struct timeval delta;
+			calculateNextTimeout(info, now, delta);
+			event_add(info->ev, &delta);
+		}
+
 		++it;
 	}
 }

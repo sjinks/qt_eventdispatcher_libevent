@@ -11,7 +11,6 @@ An experimental libevent based event dispatcher for Qt
 
 **Unsupported features**
 * `QSocketNotifier::Exception` (libevent offers no support for this)
-* `processEvents()` supports only `QEventLoop::WaitForMoreEvents` and `QEventLoop::ExcludeSocketNotifiers` flags
 * undocumented `QCoreApplication::watchUnixSignal()` is not supported (GLib dispatcher does not support it either; it has been removed from Qt 5 anyway)
 
 **Usage (Qt 4):**
