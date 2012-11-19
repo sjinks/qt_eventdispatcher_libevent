@@ -1,6 +1,3 @@
-SOURCES     += $$PWD/../eventdispatcher_libevent.cpp
-HEADERS     += $$PWD/../eventdispatcher_libevent.h
-INCLUDEPATH += $$PWD/../
-DEPENDPATH  += $$PWD/../
-CONFIG      += link_pkgconfig
-PKGCONFIG   += libevent libevent_pthreads
+LIBS        += -L$$PWD/../lib -leventdispatcher_libevent
+INCLUDEPATH += $$PWD/../lib
+DEPENDPATH  += $$PWD/../lib
