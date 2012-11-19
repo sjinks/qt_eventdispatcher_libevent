@@ -5,7 +5,7 @@ libevent based event dispatcher for Qt
 
 **Features**
 * very fast :-)
-* `eventfd()` can be used instead of `pipe()` for internal communication (automatically enabled if glibc 2.8 or better is detected; define `HAVE_SYS_EVENTFD_H` to use this feature forcefully)
+* `eventfd()` is used instead of `pipe()` for internal communication (automatically enabled if glibc 2.8 or better is detected)
 * compatibility with Qt4 and Qt 5
 * does not use any private Qt headers
 * passes Qt 5 event dispatcher, event loop, timer and socket notifier tests
@@ -37,13 +37,7 @@ And add these lines to the .pro file:
 
 ```
 CONFIG    += link_pkgconfig
-PKGCONFIG += libevent
-```
-
-To use `eventfd()` instead of `pipe()` (requires Linux kernel 2.6.22 / glibc 2.8) add this line to the .pro file (`eventfd()` is used automatically if glibc 2.8 or better is detected):
-
-```
-DEFINES += HAVE_SYS_EVENTFD_H
+PKGCONFIG += eventdispatcher_libevent
 ```
 
 **Usage (Qt 5):**
@@ -69,13 +63,7 @@ And add these lines to the .pro file:
 
 ```
 CONFIG    += link_pkgconfig
-PKGCONFIG += libevent libevent_pthreads
-```
-
-To use `eventfd()` instead of `pipe()` (requires Linux kernel 2.6.22 / glibc 2.8) add this line to the .pro file (`eventfd()` is used automatically if glibc 2.8 or better is detected):
-
-```
-DEFINES += HAVE_SYS_EVENTFD_H
+PKGCONFIG += eventdispatcher_libevent
 ```
 
 Qt 5 allows to specify a custom event dispatcher for a thread:

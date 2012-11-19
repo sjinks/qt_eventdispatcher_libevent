@@ -1,5 +1,7 @@
+*.a
 *.o
 *.moc
+*.prl
 moc_*.cpp
 Makefile
 Makefile.*
