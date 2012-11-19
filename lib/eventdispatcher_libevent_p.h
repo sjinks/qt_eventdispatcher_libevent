@@ -22,7 +22,7 @@ class EventDispatcherLibEvent;
 struct event;
 struct event_base;
 
-class EventDispatcherLibEventPrivate {
+class Q_DECL_HIDDEN EventDispatcherLibEventPrivate {
 public:
 	EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q);
 	~EventDispatcherLibEventPrivate(void);
@@ -67,6 +67,9 @@ private:
 	TimerHash m_timers;
 	QSet<int> m_timers_to_reactivate;
 	bool m_seen_event;
+
+	static void calculateCoarseTimerTimeout(EventDispatcherLibEventPrivate::TimerInfo* info, const struct timeval& now, struct timeval& when);
+	static void calculateNextTimeout(EventDispatcherLibEventPrivate::TimerInfo* info, const struct timeval& now, struct timeval& delta);
 
 	static void socket_notifier_callback(evutil_socket_t fd, short int events, void* arg);
 	static void timer_callback(evutil_socket_t fd, short int events, void* arg);
