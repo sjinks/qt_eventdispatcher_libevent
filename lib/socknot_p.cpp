@@ -22,7 +22,7 @@ void EventDispatcherLibEventPrivate::registerSocketNotifier(QSocketNotifier* not
 	struct event* ev = event_new(this->m_base, sockfd, what, EventDispatcherLibEventPrivate::socket_notifier_callback, this);
 	event_add(ev, 0);
 
-	SocketNotifierInfo data;
+	EventDispatcherLibEventPrivate::SocketNotifierInfo data;
 	data.sn = notifier;
 	data.ev = ev;
 	this->m_notifiers.insertMulti(sockfd, data);
@@ -33,7 +33,7 @@ void EventDispatcherLibEventPrivate::unregisterSocketNotifier(QSocketNotifier* n
 	evutil_socket_t sockfd = notifier->socket();
 	SocketNotifierHash::Iterator it = this->m_notifiers.find(sockfd);
 	while (it != this->m_notifiers.end() && it.key() == sockfd) {
-		SocketNotifierInfo& data = it.value();
+		EventDispatcherLibEventPrivate::SocketNotifierInfo& data = it.value();
 		if (data.sn == notifier) {
 			event_del(data.ev);
 			event_free(data.ev);
@@ -51,7 +51,7 @@ void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int 
 	disp->m_seen_event = true;
 	SocketNotifierHash::Iterator it = disp->m_notifiers.find(fd);
 	while (it != disp->m_notifiers.end() && it.key() == fd) {
-		SocketNotifierInfo& data = it.value();
+		EventDispatcherLibEventPrivate::SocketNotifierInfo& data = it.value();
 		QSocketNotifier::Type type = data.sn->type();
 
 		if ((QSocketNotifier::Read == type && (events & EV_READ)) || (QSocketNotifier::Write == type && (events & EV_WRITE))) {
@@ -67,8 +67,23 @@ void EventDispatcherLibEventPrivate::disableSocketNotifiers(bool disable)
 {
 	SocketNotifierHash::Iterator it = this->m_notifiers.begin();
 	while (it != this->m_notifiers.end()) {
-		SocketNotifierInfo& data = it.value();
+		EventDispatcherLibEventPrivate::SocketNotifierInfo& data = it.value();
 		disable ? event_del(data.ev) : event_add(data.ev, 0);
 		++it;
+	}
+}
+
+void EventDispatcherLibEventPrivate::killSocketNotifiers(void)
+{
+	if (!this->m_notifiers.isEmpty()) {
+		EventDispatcherLibEventPrivate::SocketNotifierHash::Iterator it = this->m_notifiers.begin();
+		while (it != this->m_notifiers.end()) {
+			EventDispatcherLibEventPrivate::SocketNotifierInfo& data = it.value();
+			event_del(data.ev);
+			event_free(data.ev);
+			++it;
+		}
+
+		this->m_notifiers.clear();
 	}
 }

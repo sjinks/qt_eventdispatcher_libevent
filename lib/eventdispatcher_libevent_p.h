@@ -76,7 +76,9 @@ private:
 	static void wake_up_handler(evutil_socket_t fd, short int events, void* arg);
 
 	void disableSocketNotifiers(bool disable);
+	void killSocketNotifiers(void);
 	void disableTimers(bool disable);
+	void killTimers(void);
 };
 
 #endif // EVENTDISPATCHER_LIBEVENT_P_H

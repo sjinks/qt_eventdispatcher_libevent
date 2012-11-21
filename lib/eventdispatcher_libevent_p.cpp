@@ -20,6 +20,7 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 	}
 
 	this->m_base = event_base_new();
+	Q_CHECK_PTR(this->m_base != 0);
 
 	if (-1 == make_tco(&this->m_pipe_read, &this->m_pipe_write)) {
 		qFatal("%s: Fatal: Unable to create thread communication object", Q_FUNC_INFO);
@@ -49,6 +50,9 @@ EventDispatcherLibEventPrivate::~EventDispatcherLibEventPrivate(void)
 		event_free(this->m_wakeup);
 		this->m_wakeup = 0;
 	}
+
+	this->killTimers();
+	this->killSocketNotifiers();
 
 	if (this->m_base) {
 		event_base_free(this->m_base);
