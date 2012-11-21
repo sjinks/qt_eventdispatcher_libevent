@@ -552,6 +552,7 @@ public:
 void tst_QTimer::timerIdPersistsAfterThreadExit()
 {
     TimerIdPersistsAfterThreadExitThread thread;
+    thread.setEventDispatcher(new EventDispatcherLibEvent);
     thread.start();
     QVERIFY(thread.wait(30000));
     QCOMPARE(thread.returnValue, 0);
