@@ -1,22 +1,18 @@
 #include <QtCore/QCoreApplication>
 #include "eventdispatcher_libevent.h"
-#if QT_VERSION >= 0x050000
-#	include <event2/thread.h>
-#endif
+#include <event2/thread.h>
 #include "utils_p.h"
 #include "eventdispatcher_libevent_p.h"
 
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q)
-	: q_ptr(q), m_interrupt(false), m_pipe_read(), m_pipe_write(), m_base(0), m_wakeup(0),
+	: q_ptr(q), m_interrupt(false), m_pipe_read(), m_pipe_write(), m_base(0), m_wakeup(0), m_wakeups(),
 	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_seen_event(false)
 {
 	static bool init = false;
 	if (!init) {
 		init = true;
 		event_set_log_callback(event_log_callback);
-#if QT_VERSION >= 0x050000
 		evthread_use_pthreads();
-#endif
 	}
 
 	this->m_base = event_base_new();
@@ -26,7 +22,7 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 		qFatal("%s: Fatal: Unable to create thread communication object", Q_FUNC_INFO);
 	}
 	else {
-		this->m_wakeup = event_new(this->m_base, this->m_pipe_read, EV_READ | EV_PERSIST, EventDispatcherLibEventPrivate::wake_up_handler, 0);
+		this->m_wakeup = event_new(this->m_base, this->m_pipe_read, EV_READ | EV_PERSIST, EventDispatcherLibEventPrivate::wake_up_handler, this);
 		event_add(this->m_wakeup, 0);
 	}
 }
@@ -156,7 +152,8 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 void EventDispatcherLibEventPrivate::wake_up_handler(int fd, short int events, void* arg)
 {
 	Q_UNUSED(events)
-	Q_UNUSED(arg)
+
+	EventDispatcherLibEventPrivate* disp = reinterpret_cast<EventDispatcherLibEventPrivate*>(arg);
 
 #ifdef HAVE_SYS_EVENTFD_H
 	quint64 t;
@@ -169,4 +166,8 @@ void EventDispatcherLibEventPrivate::wake_up_handler(int fd, short int events, v
 		// Do nothing
 	}
 #endif
+
+	if (!disp->m_wakeups.testAndSetRelease(1, 0)) {
+		qCritical("%s: internal error, wakeUps.testAndSetRelease(1, 0) failed!", Q_FUNC_INFO);
+	}
 }
