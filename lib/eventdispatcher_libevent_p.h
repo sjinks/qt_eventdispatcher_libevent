@@ -3,6 +3,7 @@
 
 #include <qplatformdefs.h>
 #include <QtCore/QAbstractEventDispatcher>
+#include <QtCore/QAtomicInt>
 #include <QtCore/QHash>
 #include <QtCore/QMultiHash>
 #include <QtCore/QSet>
@@ -63,6 +64,7 @@ private:
 	int m_pipe_write;
 	struct event_base* m_base;
 	struct event* m_wakeup;
+	QAtomicInt m_wakeups;
 	SocketNotifierHash m_notifiers;
 	TimerHash m_timers;
 	QSet<int> m_timers_to_reactivate;

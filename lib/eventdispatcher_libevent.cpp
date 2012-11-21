@@ -159,9 +159,11 @@ void EventDispatcherLibEvent::wakeUp(void)
 {
 	Q_D(EventDispatcherLibEvent);
 
-	quint64 x = 1;
-	if (safe_write(d->m_pipe_write, reinterpret_cast<const char*>(&x), sizeof(x)) != sizeof(x)) {
-		qErrnoWarning("%s: write failed", Q_FUNC_INFO);
+	if (d->m_wakeups.testAndSetAcquire(0, 1)) {
+		quint64 x = 1;
+		if (safe_write(d->m_pipe_write, reinterpret_cast<const char*>(&x), sizeof(x)) != sizeof(x)) {
+			qErrnoWarning("%s: write failed", Q_FUNC_INFO);
+		}
 	}
 }
 
