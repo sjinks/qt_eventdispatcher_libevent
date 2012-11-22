@@ -1,17 +1,19 @@
 QT       -= gui
 TARGET    = eventdispatcher_libevent
 TEMPLATE  = lib
+DESTDIR   = ../lib
 CONFIG   += staticlib create_prl create_pc link_pkgconfig
 HEADERS  += eventdispatcher_libevent.h eventdispatcher_libevent_p.h
 SOURCES  += eventdispatcher_libevent.cpp eventdispatcher_libevent_p.cpp timers_p.cpp socknot_p.cpp
+
+headers.files = eventdispatcher_libevent.h
 
 unix {
 	CONFIG    += create_pc link_pkgconfig
 	PKGCONFIG += libevent libevent_pthreads
 
-	target.path   = /usr/lib
-	headers.path  = /usr/include
-	headers.files = eventdispatcher_libevent.h
+	target.path  = /usr/lib
+	headers.path = /usr/include
 
 	INSTALLS += target headers
 
@@ -22,5 +24,7 @@ unix {
 	QMAKE_PKGCONFIG_DESTDIR     = pkgconfig
 }
 else:win32 {
-	LIBS += -levent_core
+	LIBS        += -levent_core
+	INSTALLS    += target headers
+	headers.path = $$DESTDIR
 }

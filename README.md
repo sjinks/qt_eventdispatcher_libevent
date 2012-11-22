@@ -22,6 +22,36 @@ libevent based event dispatcher for Qt
 Simply include the header file and instantiate the dispatcher in `main()`
 before creating the Qt application object.
 
+**Build**
+
+```
+cd src
+qmake
+make
+```
+
+Replace `make` with `nmake` if your are using Microsoft Visual C++.
+
+The above commands will generate the static library and `.prl` file in `../lib` directory.
+
+**Install**
+
+After completing Build step run
+
+*NIX:
+```
+sudo make install
+```
+
+Windows:
+```
+nmake install
+```
+
+For Windows this will copy `eventdispatcher_libevent.h` to `../lib` directory.
+For *NIX this will install eventdispatcher_libevent.h to `/usr/include`, `libeventdispatcher_libevent.a` and `libeventdispatcher_libevent.prl` to `/usr/lib`, `eventdispatcher_libevent.pc` to `/usr/lib/pkgconfig`.
+
+
 ```c++
 #include "eventdispatcher_libevent.h"
     
@@ -44,8 +74,15 @@ unix {
     PKGCONFIG += eventdispatcher_libevent
 }
 else:win32 {
-    LIBS += -L/path/to/eventdispatcher_libevent -leventdispatcher_libevent
+    include(/path/to/qt_eventdispatcher_libevent/lib/eventdispatcher_libevent.pri)
 }
+```
+
+or
+
+```
+HEADERS += /path/to/eventdispatcher_libevent.h
+LIBS    += -L/path/to/library -leventdispatcher_libevent
 ```
 
 **Usage (Qt 5):**
@@ -75,8 +112,15 @@ unix {
     PKGCONFIG += eventdispatcher_libevent
 }
 else:win32 {
-    LIBS += -L/path/to/eventdispatcher_libevent -leventdispatcher_libevent
+    include(/path/to/qt_eventdispatcher_libevent/lib/eventdispatcher_libevent.pri)
 }
+```
+
+or
+
+```
+HEADERS += /path/to/eventdispatcher_libevent.h
+LIBS    += -L/path/to/library -leventdispatcher_libevent
 ```
 
 Qt 5 allows to specify a custom event dispatcher for a thread:
