@@ -9,6 +9,10 @@
 #include <QtCore/QSet>
 #include <event2/event.h>
 
+#if !defined(LIBEVENT_VERSION_NUMBER) || LIBEVENT_VERSION_NUMBER < 0x02000400
+#	error "libevent >= 2.0.4 is required"
+#endif
+
 #if QT_VERSION < 0x050000
 namespace Qt { // Sorry
 	enum TimerType {
@@ -58,8 +62,6 @@ private:
 	EventDispatcherLibEvent* const q_ptr;
 
 	bool m_interrupt;
-	int m_pipe_read;
-	int m_pipe_write;
 	struct event_base* m_base;
 	struct event* m_wakeup;
 	QAtomicInt m_wakeups;

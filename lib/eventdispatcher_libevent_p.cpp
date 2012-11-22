@@ -2,18 +2,32 @@
 #include <QtCore/QCoreApplication>
 #include <event2/thread.h>
 #include "eventdispatcher_libevent.h"
-#include "utils_p.h"
 #include "eventdispatcher_libevent_p.h"
 
+static void event_log_callback(int severity, const char* msg)
+{
+	switch (severity) {
+		case EVENT_LOG_WARN: qWarning("%s", msg); break;
+		case EVENT_LOG_ERR:  qCritical("%s", msg); break;
+		default:             qDebug("%s", msg); break;
+	}
+}
+
+
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q)
-	: q_ptr(q), m_interrupt(false), m_pipe_read(), m_pipe_write(), m_base(0), m_wakeup(0), m_wakeups(),
+	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0), m_wakeups(),
 	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_seen_event(false)
 {
 	static bool init = false;
 	if (!init) {
 		init = true;
 		event_set_log_callback(event_log_callback);
+#if defined(EVTHREAD_USE_PTHREADS_IMPLEMENTED)
 		evthread_use_pthreads();
+#elif defined(EVTHREAD_USE_WINDOWS_THREADS_IMPLEMENTED)
+		evthread_use_windows_threads();
+#endif
+
 #if defined(LIBEVENT_VERSION_NUMBER) && LIBEVENT_VERSION_NUMBER > 0x02010100
 		qAddPostRoutine(libevent_global_shutdown);
 #endif
@@ -22,30 +36,13 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 	this->m_base = event_base_new();
 	Q_CHECK_PTR(this->m_base);
 
-	if (-1 == make_tco(&this->m_pipe_read, &this->m_pipe_write)) {
-		qFatal("%s: Fatal: Unable to create thread communication object", Q_FUNC_INFO);
-	}
-	else {
-		this->m_wakeup = event_new(this->m_base, this->m_pipe_read, EV_READ | EV_PERSIST, EventDispatcherLibEventPrivate::wake_up_handler, this);
-		Q_CHECK_PTR(this->m_wakeup);
-		event_add(this->m_wakeup, 0);
-	}
+	this->m_wakeup = event_new(this->m_base, 0, EV_PERSIST, EventDispatcherLibEventPrivate::wake_up_handler, this);
+	Q_CHECK_PTR(this->m_wakeup);
+	event_add(this->m_wakeup, 0);
 }
 
 EventDispatcherLibEventPrivate::~EventDispatcherLibEventPrivate(void)
 {
-#ifdef HAVE_SYS_EVENTFD_H
-	Q_ASSERT(this->m_pipe_read == this->m_pipe_write);
-#else
-	if (-1 != this->m_pipe_write) {
-		QT_CLOSE(this->m_pipe_write);
-	}
-#endif
-
-	if (-1 != this->m_pipe_read) {
-		QT_CLOSE(this->m_pipe_read);
-	}
-
 	if (this->m_wakeup) {
 		event_del(this->m_wakeup);
 		event_free(this->m_wakeup);
@@ -156,21 +153,11 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 
 void EventDispatcherLibEventPrivate::wake_up_handler(int fd, short int events, void* arg)
 {
+	Q_UNUSED(fd)
 	Q_UNUSED(events)
 
 	EventDispatcherLibEventPrivate* disp = reinterpret_cast<EventDispatcherLibEventPrivate*>(arg);
-
-#ifdef HAVE_SYS_EVENTFD_H
-	quint64 t;
-	if (safe_read(fd, &t, sizeof(t)) != sizeof(t)) {
-		qErrnoWarning("%s: read failed", Q_FUNC_INFO);
-	}
-#else
-	char buf[256];
-	while (safe_read(fd, buf, sizeof(buf)) > 0) {
-		// Do nothing
-	}
-#endif
+	Q_ASSERT(disp != 0);
 
 	if (!disp->m_wakeups.testAndSetRelease(1, 0)) {
 		qCritical("%s: internal error, wakeUps.testAndSetRelease(1, 0) failed!", Q_FUNC_INFO);

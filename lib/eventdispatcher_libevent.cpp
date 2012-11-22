@@ -2,7 +2,6 @@
 #include <QtCore/QThread>
 #include "eventdispatcher_libevent.h"
 #include "eventdispatcher_libevent_p.h"
-#include "utils_p.h"
 
 EventDispatcherLibEvent::EventDispatcherLibEvent(QObject* parent)
 	: QAbstractEventDispatcher(parent), d_ptr(new EventDispatcherLibEventPrivate(this))
@@ -160,10 +159,7 @@ void EventDispatcherLibEvent::wakeUp(void)
 	Q_D(EventDispatcherLibEvent);
 
 	if (d->m_wakeups.testAndSetAcquire(0, 1)) {
-		quint64 x = 1;
-		if (safe_write(d->m_pipe_write, reinterpret_cast<const char*>(&x), sizeof(x)) != sizeof(x)) {
-			qErrnoWarning("%s: write failed", Q_FUNC_INFO);
-		}
+		event_active(d->m_wakeup, EV_TIMEOUT, 0);
 	}
 }
 

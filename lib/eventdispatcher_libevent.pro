@@ -1,19 +1,26 @@
-QT        -= gui
-TARGET     = eventdispatcher_libevent
-TEMPLATE   = lib
-CONFIG    += staticlib create_prl create_pc link_pkgconfig
-PKGCONFIG += libevent libevent_pthreads
-HEADERS   += eventdispatcher_libevent.h eventdispatcher_libevent_p.h utils_p.h
-SOURCES   += eventdispatcher_libevent.cpp eventdispatcher_libevent_p.cpp utils_p.cpp timers_p.cpp socknot_p.cpp
+QT       -= gui
+TARGET    = eventdispatcher_libevent
+TEMPLATE  = lib
+CONFIG   += staticlib create_prl create_pc link_pkgconfig
+HEADERS  += eventdispatcher_libevent.h eventdispatcher_libevent_p.h
+SOURCES  += eventdispatcher_libevent.cpp eventdispatcher_libevent_p.cpp timers_p.cpp socknot_p.cpp
 
-target.path   = /usr/lib
-headers.path  = /usr/include
-headers.files = eventdispatcher_libevent.h
+unix {
+	CONFIG    += create_pc link_pkgconfig
+	PKGCONFIG += libevent libevent_pthreads
 
-INSTALLS += target headers
+	target.path   = /usr/lib
+	headers.path  = /usr/include
+	headers.files = eventdispatcher_libevent.h
 
-QMAKE_PKGCONFIG_NAME        = eventdispatcher_libevent
-QMAKE_PKGCONFIG_DESCRIPTION = "Libevent-based event dispatcher for Qt"
-QMAKE_PKGCONFIG_LIBDIR      = $$target.path
-QMAKE_PKGCONFIG_INCDIR      = $$headers.path
-QMAKE_PKGCONFIG_DESTDIR     = pkgconfig
+	INSTALLS += target headers
+
+	QMAKE_PKGCONFIG_NAME        = eventdispatcher_libevent
+	QMAKE_PKGCONFIG_DESCRIPTION = "Libevent-based event dispatcher for Qt"
+	QMAKE_PKGCONFIG_LIBDIR      = $$target.path
+	QMAKE_PKGCONFIG_INCDIR      = $$headers.path
+	QMAKE_PKGCONFIG_DESTDIR     = pkgconfig
+}
+else:win32 {
+	LIBS += -levent_core
+}
