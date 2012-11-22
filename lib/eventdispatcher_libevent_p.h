@@ -20,8 +20,6 @@ namespace Qt { // Sorry
 #endif
 
 class EventDispatcherLibEvent;
-struct event;
-struct event_base;
 
 class Q_DECL_HIDDEN EventDispatcherLibEventPrivate {
 public:

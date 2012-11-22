@@ -1,8 +1,8 @@
 #ifndef UTILS_P_H
 #define UTILS_P_H
 
-#include <QtCore/QtGlobal>
 #include <qplatformdefs.h>
+#include <QtCore/QtGlobal>
 #include <errno.h>
 
 Q_DECL_HIDDEN void event_log_callback(int severity, const char* msg);

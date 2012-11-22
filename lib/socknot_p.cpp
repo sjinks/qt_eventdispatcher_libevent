@@ -20,6 +20,7 @@ void EventDispatcherLibEventPrivate::registerSocketNotifier(QSocketNotifier* not
 
 	what |= EV_PERSIST;
 	struct event* ev = event_new(this->m_base, sockfd, what, EventDispatcherLibEventPrivate::socket_notifier_callback, this);
+	Q_CHECK_PTR(ev);
 	event_add(ev, 0);
 
 	EventDispatcherLibEventPrivate::SocketNotifierInfo data;
@@ -68,7 +69,13 @@ void EventDispatcherLibEventPrivate::disableSocketNotifiers(bool disable)
 	SocketNotifierHash::Iterator it = this->m_notifiers.begin();
 	while (it != this->m_notifiers.end()) {
 		EventDispatcherLibEventPrivate::SocketNotifierInfo& data = it.value();
-		disable ? event_del(data.ev) : event_add(data.ev, 0);
+		if (disable) {
+			event_del(data.ev);
+		}
+		else {
+			event_add(data.ev, 0);
+		}
+
 		++it;
 	}
 }

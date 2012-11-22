@@ -172,6 +172,7 @@ void EventDispatcherLibEventPrivate::registerTimer(int timerId, int interval, Qt
 	info->type     = type;
 	info->object   = object;
 	info->when     = now; // calculateNextTimeout() will take care of info->when
+	Q_CHECK_PTR(info->ev);
 
 	if (Qt::CoarseTimer == type) {
 		if (interval >= 20000) {

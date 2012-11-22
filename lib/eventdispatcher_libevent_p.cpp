@@ -1,6 +1,7 @@
+#include <qplatformdefs.h>
 #include <QtCore/QCoreApplication>
-#include "eventdispatcher_libevent.h"
 #include <event2/thread.h>
+#include "eventdispatcher_libevent.h"
 #include "utils_p.h"
 #include "eventdispatcher_libevent_p.h"
 
@@ -13,16 +14,20 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 		init = true;
 		event_set_log_callback(event_log_callback);
 		evthread_use_pthreads();
+#if defined(LIBEVENT_VERSION_NUMBER) && LIBEVENT_VERSION_NUMBER > 0x02010100
+		qAddPostRoutine(libevent_global_shutdown);
+#endif
 	}
 
 	this->m_base = event_base_new();
-	Q_CHECK_PTR(this->m_base != 0);
+	Q_CHECK_PTR(this->m_base);
 
 	if (-1 == make_tco(&this->m_pipe_read, &this->m_pipe_write)) {
 		qFatal("%s: Fatal: Unable to create thread communication object", Q_FUNC_INFO);
 	}
 	else {
 		this->m_wakeup = event_new(this->m_base, this->m_pipe_read, EV_READ | EV_PERSIST, EventDispatcherLibEventPrivate::wake_up_handler, this);
+		Q_CHECK_PTR(this->m_wakeup);
 		event_add(this->m_wakeup, 0);
 	}
 }
@@ -33,12 +38,12 @@ EventDispatcherLibEventPrivate::~EventDispatcherLibEventPrivate(void)
 	Q_ASSERT(this->m_pipe_read == this->m_pipe_write);
 #else
 	if (-1 != this->m_pipe_write) {
-		evutil_closesocket(this->m_pipe_write);
+		QT_CLOSE(this->m_pipe_write);
 	}
 #endif
 
 	if (-1 != this->m_pipe_read) {
-		evutil_closesocket(this->m_pipe_read);
+		QT_CLOSE(this->m_pipe_read);
 	}
 
 	if (this->m_wakeup) {
