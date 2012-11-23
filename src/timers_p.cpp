@@ -121,6 +121,15 @@ void EventDispatcherLibEventPrivate::calculateNextTimeout(EventDispatcherLibEven
 	tv_interval.tv_sec  = info->interval / 1000;
 	tv_interval.tv_usec = (info->interval % 1000) * 1000;
 
+	if (info->interval) {
+		qlonglong tnow  = (qlonglong(now.tv_sec)        * 1000) + (now.tv_usec        / 1000);
+		qlonglong twhen = (qlonglong(info->when.tv_sec) * 1000) + (info->when.tv_usec / 1000);
+
+		if ((info->interval < 1000 && twhen - tnow > 1500) || (info->interval >= 1000 && twhen - tnow > 1.2*info->interval)) {
+			info->when = now;
+		}
+	}
+
 	if (Qt::VeryCoarseTimer == info->type) {
 		if (info->when.tv_usec >= 500000) {
 			++info->when.tv_sec;
@@ -256,7 +265,7 @@ int EventDispatcherLibEventPrivate::remainingTime(int timerId) const
 		int r = event_pending(info->ev, EV_TIMEOUT, &when);
 		if (r) {
 			struct timeval now;
-			event_base_gettimeofday_cached(this->m_base, &now);
+			evutil_gettimeofday(&now, 0);
 
 			qulonglong tnow  = qulonglong(now.tv_sec)  * 1000000 + now.tv_usec;
 			qulonglong twhen = qulonglong(when.tv_sec) * 1000000 + when.tv_usec;
