@@ -8,6 +8,11 @@ EventDispatcherLibEvent::EventDispatcherLibEvent(QObject* parent)
 {
 }
 
+EventDispatcherLibEvent::EventDispatcherLibEvent(const EventDispatcherLibEventConfig& config, QObject* parent)
+	: QAbstractEventDispatcher(parent), d_ptr(new EventDispatcherLibEventPrivate(this, config))
+{
+}
+
 EventDispatcherLibEvent::~EventDispatcherLibEvent(void)
 {
 }
@@ -172,4 +177,10 @@ void EventDispatcherLibEvent::interrupt(void)
 
 void EventDispatcherLibEvent::flush(void)
 {
+}
+
+void EventDispatcherLibEvent::reinitialize(void)
+{
+	Q_D(EventDispatcherLibEvent);
+	event_reinit(d->m_base);
 }

@@ -3,6 +3,8 @@
 #include <event2/thread.h>
 #include "eventdispatcher_libevent.h"
 #include "eventdispatcher_libevent_p.h"
+#include "eventdispatcher_libevent_config.h"
+#include "eventdispatcher_libevent_config_p.h"
 
 static void event_log_callback(int severity, const char* msg)
 {
@@ -17,6 +19,18 @@ static void event_log_callback(int severity, const char* msg)
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q)
 	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0), m_wakeups(),
 	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_seen_event(false)
+{
+	this->initialize(0);
+}
+
+EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q, const EventDispatcherLibEventConfig& cfg)
+	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0), m_wakeups(),
+	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_seen_event(false)
+{
+	this->initialize(&cfg);
+}
+
+void EventDispatcherLibEventPrivate::initialize(const EventDispatcherLibEventConfig* cfg)
 {
 	static bool init = false;
 	if (!init) {
@@ -33,8 +47,17 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 #endif
 	}
 
-	this->m_base = event_base_new();
-	Q_CHECK_PTR(this->m_base);
+	if (cfg) {
+		this->m_base = event_base_new_with_config(cfg->d_func()->m_cfg);
+		if (!this->m_base) {
+			qWarning("%s: Cannot create the event base with the specified configuration", Q_FUNC_INFO);
+		}
+	}
+
+	if (!this->m_base) {
+		this->m_base = event_base_new();
+		Q_CHECK_PTR(this->m_base);
+	}
 
 	this->m_wakeup = event_new(this->m_base, 0, EV_PERSIST, EventDispatcherLibEventPrivate::wake_up_handler, this);
 	Q_CHECK_PTR(this->m_wakeup);

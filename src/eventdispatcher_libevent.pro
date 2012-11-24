@@ -3,10 +3,10 @@ TARGET    = eventdispatcher_libevent
 TEMPLATE  = lib
 DESTDIR   = ../lib
 CONFIG   += staticlib create_prl create_pc link_pkgconfig
-HEADERS  += eventdispatcher_libevent.h eventdispatcher_libevent_p.h
-SOURCES  += eventdispatcher_libevent.cpp eventdispatcher_libevent_p.cpp timers_p.cpp socknot_p.cpp
+HEADERS  += eventdispatcher_libevent.h eventdispatcher_libevent_p.h eventdispatcher_libevent_config.h eventdispatcher_libevent_config_p.h
+SOURCES  += eventdispatcher_libevent.cpp eventdispatcher_libevent_p.cpp timers_p.cpp socknot_p.cpp eventdispatcher_libevent_config.cpp
 
-headers.files = eventdispatcher_libevent.h
+headers.files = eventdispatcher_libevent.h eventdispatcher_libevent_config.h
 
 unix {
 	CONFIG    += create_pc link_pkgconfig

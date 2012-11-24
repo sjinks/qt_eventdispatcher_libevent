@@ -24,10 +24,12 @@ namespace Qt { // Sorry
 #endif
 
 class EventDispatcherLibEvent;
+class EventDispatcherLibEventConfig;
 
 class Q_DECL_HIDDEN EventDispatcherLibEventPrivate {
 public:
 	EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q);
+	EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q, const EventDispatcherLibEventConfig& cfg);
 	~EventDispatcherLibEventPrivate(void);
 	bool processEvents(QEventLoop::ProcessEventsFlags flags);
 	void registerSocketNotifier(QSocketNotifier* notifier);
@@ -69,6 +71,8 @@ private:
 	TimerHash m_timers;
 	QSet<int> m_timers_to_reactivate;
 	bool m_seen_event;
+
+	void initialize(const EventDispatcherLibEventConfig* cfg);
 
 	static void calculateCoarseTimerTimeout(EventDispatcherLibEventPrivate::TimerInfo* info, const struct timeval& now, struct timeval& when);
 	static void calculateNextTimeout(EventDispatcherLibEventPrivate::TimerInfo* info, const struct timeval& now, struct timeval& delta);

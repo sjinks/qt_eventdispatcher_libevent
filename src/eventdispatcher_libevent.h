@@ -4,11 +4,13 @@
 #include <QtCore/QAbstractEventDispatcher>
 
 class EventDispatcherLibEventPrivate;
+class EventDispatcherLibEventConfig;
 
 class EventDispatcherLibEvent : public QAbstractEventDispatcher {
 	Q_OBJECT
 public:
 	explicit EventDispatcherLibEvent(QObject* parent = 0);
+	EventDispatcherLibEvent(const EventDispatcherLibEventConfig& config, QObject* parent = 0);
 	virtual ~EventDispatcherLibEvent(void);
 
 	virtual bool processEvents(QEventLoop::ProcessEventsFlags flags);
@@ -36,6 +38,9 @@ public:
 	virtual void wakeUp(void);
 	virtual void interrupt(void);
 	virtual void flush(void);
+
+public:
+	void reinitialize(void);
 
 private:
 	Q_DISABLE_COPY(EventDispatcherLibEvent)
