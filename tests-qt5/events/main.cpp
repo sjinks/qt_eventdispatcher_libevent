@@ -43,6 +43,7 @@
 #include <qtest.h>
 #include <qtesteventloop.h>
 #include "eventdispatcher_libevent.h"
+#include "eventdispatcher_libevent_config.h"
 
 class PingPong : public QObject
 {
@@ -187,7 +188,9 @@ void EventsBench::postEvent()
 
 int main(int argc, char** argv)
 {
-    //QCoreApplication::setEventDispatcher(new EventDispatcherLibEvent);
+    EventDispatcherLibEventConfig cfg;
+    cfg.setConfiguration(EventDispatcherLibEventConfig::cfg_NoLock);
+    QCoreApplication::setEventDispatcher(new EventDispatcherLibEvent(cfg));
     QCoreApplication app(argc, argv);
     EventsBench t;
     return QTest::qExec(&t, argc, argv);

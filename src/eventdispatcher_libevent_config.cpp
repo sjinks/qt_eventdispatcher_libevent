@@ -41,23 +41,23 @@ bool EventDispatcherLibEventConfig::setConfiguration(Configuration cfg)
 {
 	int config = 0;
 
-	if (cfg & cfg_NoLock) {
+	if (cfg & EventDispatcherLibEventConfig::cfg_NoLock) {
 		config |= EVENT_BASE_FLAG_NOLOCK;
 	}
 
-	if (cfg & cfg_IgnoreEnvironment) {
+	if (cfg & EventDispatcherLibEventConfig::cfg_IgnoreEnvironment) {
 		config |= EVENT_BASE_FLAG_IGNORE_ENV;
 	}
 
-	if (cfg & cfg_StartupIOCP) {
+	if (cfg & EventDispatcherLibEventConfig::cfg_StartupIOCP) {
 		config |= EVENT_BASE_FLAG_STARTUP_IOCP;
 	}
 
-	if (cfg & cfg_NoCacheTime) {
+	if (cfg & EventDispatcherLibEventConfig::cfg_NoCacheTime) {
 		config |= EVENT_BASE_FLAG_NO_CACHE_TIME;
 	}
 
-	if (cfg & cfg_EPollChangelist) {
+	if (cfg & EventDispatcherLibEventConfig::cfg_EPollChangelist) {
 		config |= EVENT_BASE_FLAG_EPOLL_USE_CHANGELIST;
 	}
 
