@@ -1,6 +1,5 @@
 #include <qplatformdefs.h>
 #include <QtCore/QCoreApplication>
-#include <event2/thread.h>
 #include "eventdispatcher_libevent.h"
 #include "eventdispatcher_libevent_p.h"
 #include "eventdispatcher_libevent_config.h"
@@ -36,11 +35,6 @@ void EventDispatcherLibEventPrivate::initialize(const EventDispatcherLibEventCon
 	if (!init) {
 		init = true;
 		event_set_log_callback(event_log_callback);
-#if defined(EVTHREAD_USE_PTHREADS_IMPLEMENTED)
-		evthread_use_pthreads();
-#elif defined(EVTHREAD_USE_WINDOWS_THREADS_IMPLEMENTED)
-		evthread_use_windows_threads();
-#endif
 
 #if defined(LIBEVENT_VERSION_NUMBER) && LIBEVENT_VERSION_NUMBER > 0x02010100
 		qAddPostRoutine(libevent_global_shutdown);

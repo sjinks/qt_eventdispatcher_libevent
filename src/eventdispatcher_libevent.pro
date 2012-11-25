@@ -10,7 +10,7 @@ headers.files = eventdispatcher_libevent.h eventdispatcher_libevent_config.h
 
 unix {
 	CONFIG    += create_pc link_pkgconfig
-	PKGCONFIG += libevent libevent_pthreads
+	PKGCONFIG += libevent
 
 	target.path  = /usr/lib
 	headers.path = /usr/include
