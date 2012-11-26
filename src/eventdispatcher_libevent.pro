@@ -2,7 +2,7 @@ QT       -= gui
 TARGET    = eventdispatcher_libevent
 TEMPLATE  = lib
 DESTDIR   = ../lib
-CONFIG   += staticlib create_prl
+CONFIG   += staticlib create_prl release
 HEADERS  += eventdispatcher_libevent.h eventdispatcher_libevent_p.h eventdispatcher_libevent_config.h eventdispatcher_libevent_config_p.h
 SOURCES  += eventdispatcher_libevent.cpp eventdispatcher_libevent_p.cpp timers_p.cpp socknot_p.cpp eventdispatcher_libevent_config.cpp
 
