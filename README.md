@@ -17,10 +17,6 @@ libevent based event dispatcher for Qt
 * libevent >= 2.0.4
 * Qt >= 4.8.0 (may work with an older Qt but this has not been tested)
 
-**Usage (Qt 4):**
-
-Simply include the header file and instantiate the dispatcher in `main()`
-before creating the Qt application object.
 
 **Build**
 
@@ -51,6 +47,11 @@ nmake install
 For Windows this will copy `eventdispatcher_libevent.h` to `../lib` directory.
 For *NIX this will install eventdispatcher_libevent.h to `/usr/include`, `libeventdispatcher_libevent.a` and `libeventdispatcher_libevent.prl` to `/usr/lib`, `eventdispatcher_libevent.pc` to `/usr/lib/pkgconfig`.
 
+
+**Usage (Qt 4):**
+
+Simply include the header file and instantiate the dispatcher in `main()`
+before creating the Qt application object.
 
 ```c++
 #include "eventdispatcher_libevent.h"
@@ -84,6 +85,7 @@ or
 HEADERS += /path/to/eventdispatcher_libevent.h
 LIBS    += -L/path/to/library -leventdispatcher_libevent
 ```
+
 
 **Usage (Qt 5):**
 
