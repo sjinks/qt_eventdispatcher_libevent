@@ -44,7 +44,7 @@ Windows:
 nmake install
 ```
 
-For Windows this will copy `eventdispatcher_libevent.h` to `../lib` directory.
+For Windows this will copy `eventdispatcher_libevent.h` and `eventdispatcher_libevent_config.h` to `../lib` directory.
 For *NIX this will install eventdispatcher_libevent.h to `/usr/include`, `libeventdispatcher_libevent.a` and `libeventdispatcher_libevent.prl` to `/usr/lib`, `eventdispatcher_libevent.pc` to `/usr/lib/pkgconfig`.
 
 
