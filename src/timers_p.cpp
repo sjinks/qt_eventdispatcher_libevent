@@ -21,8 +21,8 @@ void EventDispatcherLibEventPrivate::calculateCoarseTimerTimeout(EventDispatcher
 	//
 	// The objective is to make most timers wake up at the same time, thereby reducing CPU wakeups.
 
-	int interval     = int(info->interval);
-	long int msec    = info->when.tv_usec / 1000;
+	int interval     = info->interval;
+	int msec         = static_cast<int>(info->when.tv_usec / 1000);
 	int max_rounding = interval / 20; // 5%
 	when             = info->when;
 
@@ -37,8 +37,8 @@ void EventDispatcherLibEventPrivate::calculateCoarseTimerTimeout(EventDispatcher
 		}
 	}
 	else {
-		long int min = qMax<long int>(0, msec - max_rounding);
-		long int max = qMin(1000L, msec + max_rounding);
+		int min = qMax(0, msec - max_rounding);
+		int max = qMin(1000, msec + max_rounding);
 
 		bool done = false;
 
@@ -53,7 +53,7 @@ void EventDispatcherLibEventPrivate::calculateCoarseTimerTimeout(EventDispatcher
 		}
 
 		if (!done) {
-			uint boundary;
+			int boundary;
 
 			// if the interval is a multiple of 500 ms and > 5000 ms, always round towards a round-to-the-second
 			// if the interval is a multiple of 500 ms, round towards the nearest multiple of 500 ms
@@ -87,9 +87,9 @@ void EventDispatcherLibEventPrivate::calculateCoarseTimerTimeout(EventDispatcher
 			}
 
 			if (!done) {
-				long int base   = (msec / boundary) * boundary;
-				long int middle = base + boundary / 2;
-				msec            = (msec < middle) ? qMax(base, min) : qMin(base + boundary, max);
+				int base   = (msec / boundary) * boundary;
+				int middle = base + boundary / 2;
+				msec       = (msec < middle) ? qMax(base, min) : qMin(base + boundary, max);
 			}
 		}
 	}
