@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2012 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: http://www.qt-project.org/
+** Copyright (C) 2012 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the test suite of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -184,7 +184,9 @@ private slots:
     // This test *must* run first. See the definition for why.
     void processEvents();
     void exec();
+#if !defined(QT_NO_EXCEPTIONS) && !defined(Q_OS_WINCE_WM)
     void throwInExec();
+#endif
     void reexec();
     void execAfterExit();
     void wakeUp();
@@ -322,17 +324,15 @@ void tst_QEventLoop::exec()
     }
 }
 
+#if !defined(QT_NO_EXCEPTIONS) && !defined(Q_OS_WINCE_WM)
+// Exceptions need to be enabled for this test
+// Q_OS_WINCE_WM case: this platform doesn't support propagating exceptions through the event loop
+// Windows Mobile cannot handle cross library exceptions
+// qobject.cpp will try to rethrow the exception after handling
+// which causes gwes.exe to crash
 void tst_QEventLoop::throwInExec()
 {
-#if defined(QT_NO_EXCEPTIONS) || defined(NO_EVENTLOOP_EXCEPTIONS)
-    QSKIP("Exceptions are disabled");
-#elif defined(Q_OS_WINCE_WM)
-    // Windows Mobile cannot handle cross library exceptions
-    // qobject.cpp will try to rethrow the exception after handling
-    // which causes gwes.exe to crash
-    QSKIP("This platform doesn't support propagating exceptions through the event loop");
-#else
-    // exceptions compiled in, runtime tests follow.
+// exceptions compiled in, runtime tests follow.
 #if defined(Q_OS_LINUX)
     // C++ exceptions can't be passed through glib callbacks.  Skip the test if
     // we're using the glib event loop.
@@ -368,8 +368,8 @@ void tst_QEventLoop::throwInExec()
         }
         QCOMPARE(caughtExceptions, 2);
     }
-#endif
 }
+#endif
 
 void tst_QEventLoop::reexec()
 {
