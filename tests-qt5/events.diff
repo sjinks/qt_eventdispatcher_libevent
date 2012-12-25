@@ -1,0 +1,42 @@
+diff -uBrN events.orig/events.pro events/events.pro
+--- events.orig/events.pro	2012-12-19 17:28:49.000000000 +0200
++++ events/events.pro	2012-12-25 23:57:39.000000000 +0200
+@@ -1,7 +1,8 @@
+ TEMPLATE = app
+-TARGET = tst_bench_events
+-
+-QT = core testlib
+-
++TARGET   = tst_bench_events
++QT       = core testlib
+ SOURCES += main.cpp
+ DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
++DESTDIR  = ../
++
++include(../common.pri)
+diff -uBrN events.orig/main.cpp events/main.cpp
+--- events.orig/main.cpp	2012-12-19 17:28:43.000000000 +0200
++++ events/main.cpp	2012-12-26 00:03:54.730670364 +0200
+@@ -42,6 +42,7 @@
+ 
+ #include <qtest.h>
+ #include <qtesteventloop.h>
++#include "eventdispatcher_libevent.h"
+ 
+ class PingPong : public QObject
+ {
+@@ -182,6 +183,12 @@
+     }
+ }
+ 
+-QTEST_MAIN(EventsBench)
+-
+ #include "main.moc"
++
++int main(int argc, char** argv)
++{
++    QCoreApplication::setEventDispatcher(new EventDispatcherLibEvent);
++    QCoreApplication app(argc, argv);
++    EventsBench t;
++    return QTest::qExec(&t, argc, argv);
++}

@@ -1,0 +1,82 @@
+diff -uBrN qeventloop.orig/qeventloop.pro qeventloop/qeventloop.pro
+--- qeventloop.orig/qeventloop.pro	2012-12-19 17:28:49.000000000 +0200
++++ qeventloop/qeventloop.pro	2012-12-25 23:58:08.000000000 +0200
+@@ -1,8 +1,7 @@
+ CONFIG += testcase
+-CONFIG += parallel_test
+-TARGET = tst_qeventloop
+-QT = core network testlib core-private
++TARGET  = tst_qeventloop
++QT      = core network testlib core-private
+ SOURCES = tst_qeventloop.cpp
++DESTDIR = ../
+ 
+-win32:!wince*:LIBS += -luser32
+-DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
++include(../common.pri)
+diff -uBrN qeventloop.orig/tst_qeventloop.cpp qeventloop/tst_qeventloop.cpp
+--- qeventloop.orig/tst_qeventloop.cpp	2012-12-19 17:28:44.000000000 +0200
++++ qeventloop/tst_qeventloop.cpp	2012-12-26 00:04:49.770177425 +0200
+@@ -52,6 +52,7 @@
+ #include <qwaitcondition.h>
+ #include <QTcpServer>
+ #include <QTcpSocket>
++#include "eventdispatcher_libevent.h"
+ 
+ class EventLoopExiter : public QObject
+ {
+@@ -285,6 +286,7 @@
+         // Note: this behaviour differs from QCoreApplication and QEventLoop
+         // see tst_QCoreApplication::eventLoopExecAfterExit, tst_QEventLoop::reexec
+         MultipleExecThread thread;
++        thread.setEventDispatcher(new EventDispatcherLibEvent);
+ 
+         // start thread and wait for checkpoint
+         thread.mutex.lock();
+@@ -395,6 +397,8 @@
+ void tst_QEventLoop::wakeUp()
+ {
+     EventLoopThread thread;
++    thread.setEventDispatcher(new EventDispatcherLibEvent);
++
+     QEventLoop eventLoop;
+     connect(&thread, SIGNAL(checkPoint()), &eventLoop, SLOT(quit()));
+     connect(&thread, SIGNAL(finished()), &eventLoop, SLOT(quit()));
+@@ -402,6 +406,7 @@
+     thread.start();
+     (void) eventLoop.exec();
+ 
++    QVERIFY(QAbstractEventDispatcher::instance(&thread) == thread.eventDispatcher());
+     QSignalSpy spy(QAbstractEventDispatcher::instance(&thread), SIGNAL(awake()));
+     QVERIFY(spy.isValid());
+     thread.eventLoop->wakeUp();
+@@ -525,6 +530,7 @@
+ void tst_QEventLoop::processEventsExcludeSocket()
+ {
+     SocketTestThread thread;
++    thread.setEventDispatcher(new EventDispatcherLibEvent);
+     thread.start();
+     QVERIFY(thread.wait());
+     QVERIFY(!thread.testResult);
+@@ -616,6 +622,7 @@
+     QThread threads[NbThread];
+     Object objects[NbObject];
+     for (int t = 0; t < NbThread; t++) {
++        threads[t].setEventDispatcher(new EventDispatcherLibEvent);
+         threads[t].start();
+     }
+ 
+@@ -723,5 +730,12 @@
+     QVERIFY(timerSpy.count() > 17);
+ }
+ 
+-QTEST_MAIN(tst_QEventLoop)
+ #include "tst_qeventloop.moc"
++
++int main(int argc, char** argv)
++{
++    QCoreApplication::setEventDispatcher(new EventDispatcherLibEvent);
++    QCoreApplication app(argc, argv);
++    tst_QEventLoop t;
++    return QTest::qExec(&t, argc, argv);
++}
