@@ -1,38 +1,38 @@
 /****************************************************************************
 **
-** Copyright (C) 2012 Nokia Corporation and/or its subsidiary(-ies).
-** Contact: http://www.qt-project.org/
+** Copyright (C) 2012 Digia Plc and/or its subsidiary(-ies).
+** Contact: http://www.qt-project.org/legal
 **
 ** This file is part of the QtNetwork module of the Qt Toolkit.
 **
 ** $QT_BEGIN_LICENSE:LGPL$
-** GNU Lesser General Public License Usage
-** This file may be used under the terms of the GNU Lesser General Public
-** License version 2.1 as published by the Free Software Foundation and
-** appearing in the file LICENSE.LGPL included in the packaging of this
-** file. Please review the following information to ensure the GNU Lesser
-** General Public License version 2.1 requirements will be met:
-** http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+** Commercial License Usage
+** Licensees holding valid commercial Qt licenses may use this file in
+** accordance with the commercial license agreement provided with the
+** Software or, alternatively, in accordance with the terms contained in
+** a written agreement between you and Digia.  For licensing terms and
+** conditions see http://qt.digia.com/licensing.  For further information
+** use the contact form at http://qt.digia.com/contact-us.
 **
-** In addition, as a special exception, Nokia gives you certain additional
-** rights. These rights are described in the Nokia Qt LGPL Exception
+** GNU Lesser General Public License Usage
+** Alternatively, this file may be used under the terms of the GNU Lesser
+** General Public License version 2.1 as published by the Free Software
+** Foundation and appearing in the file LICENSE.LGPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU Lesser General Public License version 2.1 requirements
+** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
+**
+** In addition, as a special exception, Digia gives you certain additional
+** rights.  These rights are described in the Digia Qt LGPL Exception
 ** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
 **
 ** GNU General Public License Usage
-** Alternatively, this file may be used under the terms of the GNU General
-** Public License version 3.0 as published by the Free Software Foundation
-** and appearing in the file LICENSE.GPL included in the packaging of this
-** file. Please review the following information to ensure the GNU General
-** Public License version 3.0 requirements will be met:
-** http://www.gnu.org/copyleft/gpl.html.
-**
-** Other Usage
-** Alternatively, this file may be used in accordance with the terms and
-** conditions contained in a signed written agreement between you and Nokia.
-**
-**
-**
-**
+** Alternatively, this file may be used under the terms of the GNU
+** General Public License version 3.0 as published by the Free Software
+** Foundation and appearing in the file LICENSE.GPL included in the
+** packaging of this file.  Please review the following information to
+** ensure the GNU General Public License version 3.0 requirements will be
+** met: http://www.gnu.org/copyleft/gpl.html.
 **
 **
 ** $QT_END_LICENSE$
@@ -50,9 +50,6 @@
 #include <time.h>
 #include <errno.h>
 #include <fcntl.h>
-#ifndef QT_NO_IPV6IFNAME
-#include <net/if.h>
-#endif
 #ifndef QT_NO_IPV6IFNAME
 #include <net/if.h>
 #endif
@@ -100,23 +97,6 @@ static QByteArray qt_prettyDebug(const char *data, int len, int maxSize)
     return out;
 }
 #endif
-
-static void qt_ignore_sigpipe()
-{
-#ifndef Q_NO_POSIX_SIGNALS
-    // Set to ignore SIGPIPE once only.
-    static QBasicAtomicInt atom = Q_BASIC_ATOMIC_INITIALIZER(0);
-    if (atom.testAndSetRelaxed(0, 1)) {
-        struct sigaction noaction;
-        memset(&noaction, 0, sizeof(noaction));
-        noaction.sa_handler = SIG_IGN;
-        ::sigaction(SIGPIPE, &noaction, 0);
-    }
-#else
-    // Posix signals are not supported by the underlying platform
-    // so we don't need to ignore sigpipe signal explicitly
-#endif
-}
 
 /*
     Extracts the port and address from a sockaddr, and stores them in
@@ -608,6 +588,46 @@ bool QNativeSocketEnginePrivate::nativeListen(int backlog)
 int QNativeSocketEnginePrivate::nativeAccept()
 {
     int acceptedDescriptor = qt_safe_accept(socketDescriptor, 0, 0);
+    if (acceptedDescriptor == -1) {
+        switch (errno) {
+        case EBADF:
+        case EOPNOTSUPP:
+            setError(QAbstractSocket::UnsupportedSocketOperationError, InvalidSocketErrorString);
+            break;
+        case ECONNABORTED:
+            setError(QAbstractSocket::NetworkError, RemoteHostClosedErrorString);
+            break;
+        case EFAULT:
+        case ENOTSOCK:
+            setError(QAbstractSocket::SocketResourceError, NotSocketErrorString);
+            break;
+        case EPROTONOSUPPORT:
+        case EPROTO:
+        case EAFNOSUPPORT:
+        case EINVAL:
+            setError(QAbstractSocket::UnsupportedSocketOperationError, ProtocolUnsupportedErrorString);
+            break;
+        case ENFILE:
+        case EMFILE:
+        case ENOBUFS:
+        case ENOMEM:
+            setError(QAbstractSocket::SocketResourceError, ResourceErrorString);
+            break;
+        case EACCES:
+        case EPERM:
+            setError(QAbstractSocket::SocketAccessError, AccessErrorString);
+            break;
+#if EAGAIN != EWOULDBLOCK
+        case EWOULDBLOCK:
+#endif
+        case EAGAIN:
+            setError(QAbstractSocket::TemporaryError, TemporaryErrorString);
+            break;
+        default:
+            setError(QAbstractSocket::UnknownSocketError, UnknownSocketErrorString);
+            break;
+        }
+    }
 
     return acceptedDescriptor;
 }
@@ -899,8 +919,6 @@ qint64 QNativeSocketEnginePrivate::nativeSendDatagram(const char *data, qint64 l
         sockAddrPtr = (struct sockaddr *)&sockAddrIPv4;
     }
 
-    // ignore the SIGPIPE signal
-    qt_ignore_sigpipe();
     ssize_t sentBytes = qt_safe_sendto(socketDescriptor, data, len,
                                        0, sockAddrPtr, sockAddrSize);
 
@@ -1024,11 +1042,8 @@ qint64 QNativeSocketEnginePrivate::nativeWrite(const char *data, qint64 len)
 {
     Q_Q(QNativeSocketEngine);
 
-    // ignore the SIGPIPE signal
-    qt_ignore_sigpipe();
-
     ssize_t writtenBytes;
-    writtenBytes = qt_safe_write(socketDescriptor, data, len);
+    writtenBytes = qt_safe_write_nosignal(socketDescriptor, data, len);
 
     if (writtenBytes < 0) {
         switch (errno) {
