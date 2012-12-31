@@ -1,5 +1,4 @@
-qt_eventdispatcher_libevent
-===========================
+# qt_eventdispatcher_libevent [![Build Status](https://secure.travis-ci.org/sjinks/qt_eventdispatcher_libevent.png)](http://travis-ci.org/sjinks/qt_eventdispatcher_libevent)
 
 libevent based event dispatcher for Qt
 
