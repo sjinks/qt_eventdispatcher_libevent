@@ -8,9 +8,9 @@
 static void event_log_callback(int severity, const char* msg)
 {
 	switch (severity) {
-		case EVENT_LOG_WARN: qWarning("%s", msg); break;
-		case EVENT_LOG_ERR:  qCritical("%s", msg); break;
-		default:             qDebug("%s", msg); break;
+		case _EVENT_LOG_WARN: qWarning("%s", msg); break;
+		case _EVENT_LOG_ERR:  qCritical("%s", msg); break;
+		default:              qDebug("%s", msg); break;
 	}
 }
 
