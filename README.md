@@ -1,6 +1,6 @@
 # qt_eventdispatcher_libevent [![Build Status](https://secure.travis-ci.org/sjinks/qt_eventdispatcher_libevent.png)](http://travis-ci.org/sjinks/qt_eventdispatcher_libevent)
 
-libevent based event dispatcher for Qt
+libevent-based event dispatcher for Qt
 
 **Features**
 * very fast :-)
@@ -10,7 +10,7 @@ libevent based event dispatcher for Qt
 
 **Unsupported features**
 * `QSocketNotifier::Exception` (libevent offers no support for this)
-* undocumented `QCoreApplication::watchUnixSignal()` is not supported (GLib dispatcher does not support it either; this feature has been removed from Qt 5 anyway)
+* undocumented `QCoreApplication::watchUnixSignal()` is not supported (GLib dispatcher does not support it either; this feature was removed from Qt 5 anyway)
 
 **Requirements**
 * libevent >= 2.0.4
@@ -124,7 +124,7 @@ HEADERS += /path/to/eventdispatcher_libevent.h
 LIBS    += -L/path/to/library -leventdispatcher_libevent
 ```
 
-Qt 5 allows to specify a custom event dispatcher for a thread:
+Qt 5 allows to specify a custom event dispatcher for the thread:
 
 ```c++
 QThread* thr = new QThread;
