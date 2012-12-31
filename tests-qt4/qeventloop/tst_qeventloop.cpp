@@ -59,7 +59,7 @@
 #include <unistd.h>
 #endif
 
-#include "eventdispatcher_epoll.h"
+#include "eventdispatcher_libevent.h"
 #include "util.h"
 
 //TESTED_CLASS=
@@ -566,7 +566,7 @@ void tst_QEventLoop::deliverInDefinedOrder_QTBUG19637()
 
 int main(int argc, char** argv)
 {
-    EventDispatcherEPoll e;
+    EventDispatcherLibEvent e;
     QCoreApplication app(argc, argv);
     tst_QEventLoop t;
     return QTest::qExec(&t, argc, argv);

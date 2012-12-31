@@ -50,7 +50,7 @@
 #endif
 
 #include "util.h"
-#include "eventdispatcher_epoll.h"
+#include "eventdispatcher_libevent.h"
 
 
 //TESTED_CLASS=
@@ -737,7 +737,7 @@ void tst_QTimer::handleLeaks()
 
 int main(int argc, char** argv)
 {
-    EventDispatcherEPoll e;
+    EventDispatcherLibEvent e;
     QCoreApplication app(argc, argv);
     tst_QTimer t;
     return QTest::qExec(&t, argc, argv);
