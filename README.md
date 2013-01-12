@@ -2,22 +2,22 @@
 
 libevent-based event dispatcher for Qt
 
-**Features**
+## Features
 * very fast :-)
 * compatibility with Qt4 and Qt 5
 * does not use any private Qt headers
 * passes Qt4 and Qt 5 event dispatcher, event loop, timer and socket notifier tests
 
-**Unsupported features**
+## Unsupported Features
 * `QSocketNotifier::Exception` (libevent offers no support for this)
 * undocumented `QCoreApplication::watchUnixSignal()` is not supported (GLib dispatcher does not support it either; this feature was removed from Qt 5 anyway)
 
-**Requirements**
+## Requirements
 * libevent >= 2.0.4
 * Qt >= 4.8.0 (may work with an older Qt but this has not been tested)
 
 
-**Build**
+## Build
 
 ```
 cd src
@@ -29,7 +29,7 @@ Replace `make` with `nmake` if your are using Microsoft Visual C++.
 
 The above commands will generate the static library and `.prl` file in `../lib` directory.
 
-**Install**
+## Install
 
 After completing Build step run
 
@@ -47,7 +47,7 @@ For Windows this will copy `eventdispatcher_libevent.h` and `eventdispatcher_lib
 For *NIX this will install eventdispatcher_libevent.h to `/usr/include`, `libeventdispatcher_libevent.a` and `libeventdispatcher_libevent.prl` to `/usr/lib`, `eventdispatcher_libevent.pc` to `/usr/lib/pkgconfig`.
 
 
-**Usage (Qt 4):**
+## Usage (Qt 4)
 
 Simply include the header file and instantiate the dispatcher in `main()`
 before creating the Qt application object.
@@ -86,7 +86,7 @@ LIBS    += -L/path/to/library -leventdispatcher_libevent
 ```
 
 
-**Usage (Qt 5):**
+## Usage (Qt 5)
 
 Simply include the header file and instantiate the dispatcher in `main()`
 before creating the Qt application object.
