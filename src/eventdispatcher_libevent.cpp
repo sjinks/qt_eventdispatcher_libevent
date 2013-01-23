@@ -159,6 +159,21 @@ int EventDispatcherLibEvent::remainingTime(int timerId)
 }
 #endif
 
+#if defined(Q_OS_WIN) && QT_VERSION >= 0x050000
+bool EventDispatcherLibEvent::registerEventNotifier(QWinEventNotifier* notifier)
+{
+	Q_UNUSED(notifier)
+	Q_UNIMPLEMENTED();
+	return false;
+}
+
+void EventDispatcherLibEvent::unregisterEventNotifier(QWinEventNotifier* notifier)
+{
+	Q_UNUSED(notifier)
+	Q_UNIMPLEMENTED();
+}
+#endif
+
 void EventDispatcherLibEvent::wakeUp(void)
 {
 	Q_D(EventDispatcherLibEvent);

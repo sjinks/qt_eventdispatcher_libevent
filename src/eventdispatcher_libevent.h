@@ -35,6 +35,11 @@ public:
 	virtual int remainingTime(int timerId);
 #endif
 
+#if defined(Q_OS_WIN) && QT_VERSION >= 0x050000
+	virtual bool registerEventNotifier(QWinEventNotifier* notifier);
+	virtual void unregisterEventNotifier(QWinEventNotifier* notifier);
+#endif
+
 	virtual void wakeUp(void);
 	virtual void interrupt(void);
 	virtual void flush(void);
