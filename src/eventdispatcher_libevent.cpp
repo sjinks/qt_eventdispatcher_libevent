@@ -179,6 +179,11 @@ void EventDispatcherLibEvent::flush(void)
 {
 }
 
+EventDispatcherLibEvent::EventDispatcherLibEvent(EventDispatcherLibEventPrivate& dd, QObject* parent)
+	: QAbstractEventDispatcher(parent), d_ptr(&dd)
+{
+}
+
 void EventDispatcherLibEvent::reinitialize(void)
 {
 	Q_D(EventDispatcherLibEvent);

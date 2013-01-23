@@ -39,6 +39,9 @@ public:
 	virtual void interrupt(void);
 	virtual void flush(void);
 
+protected:
+	EventDispatcherLibEvent(EventDispatcherLibEventPrivate& dd, QObject* parent = 0);
+
 public:
 	void reinitialize(void);
 
