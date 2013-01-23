@@ -11,6 +11,7 @@ libevent-based event dispatcher for Qt
 ## Unsupported Features
 * `QSocketNotifier::Exception` (libevent offers no support for this)
 * undocumented `QCoreApplication::watchUnixSignal()` is not supported (GLib dispatcher does not support it either; this feature was removed from Qt 5 anyway)
+* Qt 5 only: `QWinEventNotifier` is not supported (`registerEventNotifier()` and `unregisterEventNotifier()` functions are currently implemented as stubs)
 
 ## Requirements
 * libevent >= 2.0.4
