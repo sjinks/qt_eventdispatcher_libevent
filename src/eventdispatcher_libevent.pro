@@ -9,8 +9,15 @@ SOURCES  += eventdispatcher_libevent.cpp eventdispatcher_libevent_p.cpp timers_p
 headers.files = eventdispatcher_libevent.h eventdispatcher_libevent_config.h
 
 unix {
-	CONFIG    += create_pc link_pkgconfig
-	PKGCONFIG += libevent
+	CONFIG += create_pc
+
+	system('pkg-config --exists libevent') {
+		CONFIG    += link_pkgconfig
+		PKGCONFIG += libevent
+	}
+	else {
+		LIBS += -levent_core
+	}
 
 	target.path  = /usr/lib
 	headers.path = /usr/include

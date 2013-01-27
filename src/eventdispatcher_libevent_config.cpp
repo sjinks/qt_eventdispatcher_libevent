@@ -1,6 +1,12 @@
 #include <event2/event.h>
 #include "eventdispatcher_libevent_config.h"
-#include "eventdispatcher_libevent_config_p.h"
+
+#ifndef SJ_LIBEVENT_EMULATION
+#	include "eventdispatcher_libevent_config_p.h"
+#else
+#	include <QtCore/QSharedData>
+class EventDispatcherLibEventConfigPrivate : public QSharedData {};
+#endif
 
 EventDispatcherLibEventConfig::EventDispatcherLibEventConfig(void)
 	: d_ptr(new EventDispatcherLibEventConfigPrivate())
@@ -11,6 +17,11 @@ EventDispatcherLibEventConfig::~EventDispatcherLibEventConfig(void)
 {
 }
 
+#ifdef SJ_LIBEVENT_EMULATION
+bool EventDispatcherLibEventConfig::avoidMethod(const QLatin1String&) { return false; }
+bool EventDispatcherLibEventConfig::requireFeatures(Features) { return false; }
+bool EventDispatcherLibEventConfig::setConfiguration(Configuration) { return false; }
+#else
 bool EventDispatcherLibEventConfig::avoidMethod(const QLatin1String& method)
 {
 	Q_D(EventDispatcherLibEventConfig);
@@ -95,3 +106,5 @@ bool EventDispatcherLibEventConfigPrivate::setConfiguration(int config)
 {
 	return 0 == event_config_set_flag(this->m_cfg, config);
 }
+
+#endif

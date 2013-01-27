@@ -26,7 +26,13 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0), m_wakeups(),
 	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_seen_event(false)
 {
+#ifdef SJ_LIBEVENT_EMULATION
+	Q_UNUSED(cfg)
+	qWarning("LibEvent 1.x does not support custom configurations");
+	this->initialize(0);
+#else
 	this->initialize(&cfg);
+#endif
 }
 
 void EventDispatcherLibEventPrivate::initialize(const EventDispatcherLibEventConfig* cfg)
@@ -41,12 +47,16 @@ void EventDispatcherLibEventPrivate::initialize(const EventDispatcherLibEventCon
 #endif
 	}
 
+#ifndef SJ_LIBEVENT_EMULATION
 	if (cfg) {
 		this->m_base = event_base_new_with_config(cfg->d_func()->m_cfg);
 		if (!this->m_base) {
 			qWarning("%s: Cannot create the event base with the specified configuration", Q_FUNC_INFO);
 		}
 	}
+#else
+	Q_UNUSED(cfg)
+#endif
 
 	if (!this->m_base) {
 		this->m_base = event_base_new();
