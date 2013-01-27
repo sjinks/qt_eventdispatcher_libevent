@@ -37,7 +37,7 @@ public:
 private:
 	Q_DECLARE_PRIVATE(EventDispatcherLibEventConfig)
 #if QT_VERSION >= 0x040600
-	QScopedSharedDataPointer<EventDispatcherLibEventConfigPrivate> d_ptr;
+	QScopedDataPointer<EventDispatcherLibEventConfigPrivate> d_ptr;
 #else
 	EventDispatcherLibEventConfigPrivate* d_ptr;
 #endif
