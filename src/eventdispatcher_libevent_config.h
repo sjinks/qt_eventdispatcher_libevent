@@ -2,6 +2,9 @@
 #define EVENTDISPATCHER_LIBEVENT_CONFIG_H
 
 #include <QtCore/QObject>
+#if QT_VERSION >= 0x040600
+#	include <QtCore/QScopedDataPointer>
+#endif
 
 class EventDispatcherLibEventConfigPrivate;
 
