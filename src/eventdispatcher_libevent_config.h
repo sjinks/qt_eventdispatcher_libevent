@@ -3,7 +3,7 @@
 
 #include <QtCore/QObject>
 #if QT_VERSION >= 0x040600
-#	include <QtCore/QScopedDataPointer>
+#	include <QtCore/QScopedPointer>
 #endif
 
 class EventDispatcherLibEventConfigPrivate;
@@ -40,7 +40,7 @@ public:
 private:
 	Q_DECLARE_PRIVATE(EventDispatcherLibEventConfig)
 #if QT_VERSION >= 0x040600
-	QScopedDataPointer<EventDispatcherLibEventConfigPrivate> d_ptr;
+	QScopedPointer<EventDispatcherLibEventConfigPrivate> d_ptr;
 #else
 	EventDispatcherLibEventConfigPrivate* d_ptr;
 #endif
