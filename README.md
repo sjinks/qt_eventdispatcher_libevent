@@ -4,9 +4,9 @@ libevent-based event dispatcher for Qt
 
 ## Features
 * very fast :-)
-* compatibility with Qt4 and Qt 5
+* compatibility with Qt 4 and Qt 5
 * does not use any private Qt headers
-* passes Qt4 and Qt 5 event dispatcher, event loop, timer and socket notifier tests
+* passes Qt 4 and Qt 5 event dispatcher, event loop, timer and socket notifier tests
 
 ## Unsupported Features
 * `QSocketNotifier::Exception` (libevent offers no support for this)
