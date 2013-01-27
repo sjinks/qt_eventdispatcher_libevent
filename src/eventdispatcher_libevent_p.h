@@ -7,7 +7,12 @@
 #include <QtCore/QHash>
 #include <QtCore/QMultiHash>
 #include <QtCore/QSet>
-#include <event2/event.h>
+
+#if defined(SJ_LIBEVENT_MAJOR) && SJ_LIBEVENT_MAJOR == 1
+#	include "libevent2-emul.h"
+#else
+#	include <event2/event.h>
+#endif
 
 #if QT_VERSION < 0x050000
 namespace Qt { // Sorry

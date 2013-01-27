@@ -1,4 +1,9 @@
-#include <event2/event.h>
+#if defined(SJ_LIBEVENT_MAJOR) && SJ_LIBEVENT_MAJOR == 1
+#	include "libevent2-emul.h"
+#else
+#	include <event2/event.h>
+#endif
+
 #include "eventdispatcher_libevent_config.h"
 
 #ifndef SJ_LIBEVENT_EMULATION

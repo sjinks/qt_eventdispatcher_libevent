@@ -3,7 +3,7 @@ TARGET    = eventdispatcher_libevent
 TEMPLATE  = lib
 DESTDIR   = ../lib
 CONFIG   += staticlib create_prl release
-HEADERS  += eventdispatcher_libevent.h eventdispatcher_libevent_p.h eventdispatcher_libevent_config.h eventdispatcher_libevent_config_p.h
+HEADERS  += eventdispatcher_libevent.h eventdispatcher_libevent_p.h eventdispatcher_libevent_config.h eventdispatcher_libevent_config_p.h libevent2-emul.h
 SOURCES  += eventdispatcher_libevent.cpp eventdispatcher_libevent_p.cpp timers_p.cpp socknot_p.cpp eventdispatcher_libevent_config.cpp
 
 headers.files = eventdispatcher_libevent.h eventdispatcher_libevent_config.h
@@ -16,6 +16,17 @@ unix {
 		PKGCONFIG += libevent
 	}
 	else {
+		system('cc -E $$PWD/conftests/libevent2.h -o /dev/null 2> /dev/null') {
+			DEFINES += SJ_LIBEVENT_MAJOR=2
+		}
+		else:system('cc -E $$PWD/conftests/libevent1.h -o /dev/null 2> /dev/null') {
+			DEFINES += SJ_LIBEVENT_MAJOR=1
+		}
+		else {
+			warning("Assuming libevent 1.x")
+			DEFINES += SJ_LIBEVENT_MAJOR=1
+		}
+
 		LIBS += -levent_core
 	}
 
@@ -34,4 +45,3 @@ else {
 }
 
 INSTALLS += target headers
-
