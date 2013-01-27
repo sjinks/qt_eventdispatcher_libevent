@@ -66,4 +66,14 @@
 #	define Q_EMIT emit
 #endif
 
+#if QT_VERSION < 0x050000
+namespace Qt { // Sorry
+	enum TimerType {
+		PreciseTimer,
+		CoarseTimer,
+		VeryCoarseTimer
+	};
+}
+#endif
+
 #endif // QT4COMPAT_H
