@@ -2,7 +2,6 @@
 #define EVENTDISPATCHER_LIBEVENT_CONFIG_H
 
 #include <QtCore/QObject>
-#include <QtCore/QExplicitlySharedDataPointer>
 
 class EventDispatcherLibEventConfigPrivate;
 
@@ -37,7 +36,11 @@ public:
 
 private:
 	Q_DECLARE_PRIVATE(EventDispatcherLibEventConfig)
-	QExplicitlySharedDataPointer<EventDispatcherLibEventConfigPrivate> d_ptr;
+#if QT_VERSION >= 0x040600
+	QScopedSharedDataPointer<EventDispatcherLibEventConfigPrivate> d_ptr;
+#else
+	EventDispatcherLibEventConfigPrivate* d_ptr;
+#endif
 
 	friend class EventDispatcherLibEventPrivate;
 };

@@ -15,7 +15,7 @@ libevent-based event dispatcher for Qt
 
 ## Requirements
 * libevent >= 2.0.4 (the code seems to work with libevent 1.4.x but this has not been tested much)
-* Qt >= 4.8.0 (may work with an older Qt (4.4) but this has not been tested)
+* Qt >= 4.2.1 (tests from tests-qt4 were tested only on Qt 4.8.x)
 
 
 ## Build

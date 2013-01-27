@@ -5,6 +5,7 @@
 
 #include <QtCore/QtGlobal>
 #include <event.h>
+#include "qt4compat.h"
 
 typedef int evutil_socket_t;
 typedef void(*event_callback_fn)(evutil_socket_t, short, void*);

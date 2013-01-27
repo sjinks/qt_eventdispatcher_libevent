@@ -16,14 +16,20 @@ static void event_log_callback(int severity, const char* msg)
 
 
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q)
-	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0), m_wakeups(),
+	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0),
+#if QT_VERSION >= 0x040400
+	  m_wakeups(),
+#endif
 	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_seen_event(false)
 {
 	this->initialize(0);
 }
 
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q, const EventDispatcherLibEventConfig& cfg)
-	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0), m_wakeups(),
+	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0),
+#if QT_VERSION >= 0x040400
+	  m_wakeups(),
+#endif
 	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_seen_event(false)
 {
 #ifdef SJ_LIBEVENT_EMULATION
@@ -186,7 +192,11 @@ void EventDispatcherLibEventPrivate::wake_up_handler(int fd, short int events, v
 	EventDispatcherLibEventPrivate* disp = reinterpret_cast<EventDispatcherLibEventPrivate*>(arg);
 	Q_ASSERT(disp != 0);
 
+#if QT_VERSION >= 0x040400
 	if (!disp->m_wakeups.testAndSetRelease(1, 0)) {
 		qCritical("%s: internal error, wakeUps.testAndSetRelease(1, 0) failed!", Q_FUNC_INFO);
 	}
+#else
+	Q_UNUSED(disp)
+#endif
 }

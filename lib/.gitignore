@@ -1,3 +1,4 @@
 pkgconfig
 *.a
 *.prl
+*.pc

@@ -1,3 +1,4 @@
+#include <QtCore/QPair>
 #include <QtCore/QSocketNotifier>
 #include <QtCore/QThread>
 #include "eventdispatcher_libevent.h"
@@ -15,6 +16,10 @@ EventDispatcherLibEvent::EventDispatcherLibEvent(const EventDispatcherLibEventCo
 
 EventDispatcherLibEvent::~EventDispatcherLibEvent(void)
 {
+#if QT_VERSION < 0x040600
+	delete this->d_ptr;
+	this->d_ptr = 0;
+#endif
 }
 
 bool EventDispatcherLibEvent::processEvents(QEventLoop::ProcessEventsFlags flags)
@@ -178,7 +183,10 @@ void EventDispatcherLibEvent::wakeUp(void)
 {
 	Q_D(EventDispatcherLibEvent);
 
-	if (d->m_wakeups.testAndSetAcquire(0, 1)) {
+#if QT_VERSION >= 0x040600
+	if (d->m_wakeups.testAndSetAcquire(0, 1))
+#endif
+	{
 		event_active(d->m_wakeup, EV_TIMEOUT, 0);
 	}
 }

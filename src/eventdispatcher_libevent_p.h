@@ -3,16 +3,21 @@
 
 #include <qplatformdefs.h>
 #include <QtCore/QAbstractEventDispatcher>
-#include <QtCore/QAtomicInt>
 #include <QtCore/QHash>
 #include <QtCore/QMultiHash>
 #include <QtCore/QSet>
+
+#if QT_VERSION >= 0x040400
+#	include <QtCore/QAtomicInt>
+#endif
 
 #if defined(SJ_LIBEVENT_MAJOR) && SJ_LIBEVENT_MAJOR == 1
 #	include "libevent2-emul.h"
 #else
 #	include <event2/event.h>
 #endif
+
+#include "qt4compat.h"
 
 #if QT_VERSION < 0x050000
 namespace Qt { // Sorry
@@ -67,7 +72,9 @@ private:
 	bool m_interrupt;
 	struct event_base* m_base;
 	struct event* m_wakeup;
+#if QT_VERSION >= 0x040400
 	QAtomicInt m_wakeups;
+#endif
 	SocketNotifierHash m_notifiers;
 	TimerHash m_timers;
 	QSet<int> m_timers_to_reactivate;

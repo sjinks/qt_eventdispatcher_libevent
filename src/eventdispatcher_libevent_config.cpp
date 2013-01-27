@@ -9,8 +9,7 @@
 #ifndef SJ_LIBEVENT_EMULATION
 #	include "eventdispatcher_libevent_config_p.h"
 #else
-#	include <QtCore/QSharedData>
-class EventDispatcherLibEventConfigPrivate : public QSharedData {};
+class EventDispatcherLibEventConfigPrivate {};
 #endif
 
 EventDispatcherLibEventConfig::EventDispatcherLibEventConfig(void)
@@ -20,6 +19,10 @@ EventDispatcherLibEventConfig::EventDispatcherLibEventConfig(void)
 
 EventDispatcherLibEventConfig::~EventDispatcherLibEventConfig(void)
 {
+#if QT_VERSION < 0x040600
+	delete this->d_ptr;
+	this->d_ptr = 0;
+#endif
 }
 
 #ifdef SJ_LIBEVENT_EMULATION

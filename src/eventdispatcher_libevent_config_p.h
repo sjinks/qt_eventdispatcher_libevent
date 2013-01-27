@@ -1,11 +1,12 @@
 #ifndef EVENTDISPATCHER_LIBEVENT_CONFIG_P_H
 #define EVENTDISPATCHER_LIBEVENT_CONFIG_P_H
 
-#include <QtCore/QSharedData>
+#include <QtCore/QtGlobal>
+#include "qt4compat.h"
 
 struct event_config;
 
-class Q_DECL_HIDDEN EventDispatcherLibEventConfigPrivate : public QSharedData {
+class Q_DECL_HIDDEN EventDispatcherLibEventConfigPrivate {
 public:
 	EventDispatcherLibEventConfigPrivate(void);
 	~EventDispatcherLibEventConfigPrivate(void);
