@@ -1,8 +1,12 @@
 language: cpp
 
+branches:
+  only:
+    - master
+
 install:
-  - sudo apt-get update
-  - sudo apt-get install libqt4-dev libqt4-private-dev libevent-dev
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq ibqt4-dev libqt4-private-dev libevent-dev
 
 script:
   - cd src
