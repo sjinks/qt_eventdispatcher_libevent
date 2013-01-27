@@ -14,8 +14,8 @@ libevent-based event dispatcher for Qt
 * Qt 5 only: `QWinEventNotifier` is not supported (`registerEventNotifier()` and `unregisterEventNotifier()` functions are currently implemented as stubs)
 
 ## Requirements
-* libevent >= 2.0.4 (the code seems to work with libevent 1.4.x but this has not been tested much)
-* Qt >= 4.2.1 (tests from tests-qt4 were tested only on Qt 4.8.x)
+* libevent >= 2.0.4 (the code seems to work with libevent 1.4.x but this has not been tested much — but the Qt tests are successfully passed though)
+* Qt >= 4.2.1 (tests from tests-qt4 were tested only with Qt 4.8.x)
 
 
 ## Build
