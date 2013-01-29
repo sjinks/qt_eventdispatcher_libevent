@@ -295,8 +295,8 @@ void EventDispatcherLibEventPrivate::timer_callback(int fd, short int events, vo
 	// Timer can be reactivated only after its callback finishes; processEvents() will take care of this
 	info->self->m_timers_to_reactivate.insert(info->timerId);
 
-	QTimerEvent* event = new QTimerEvent(info->timerId);
-	QCoreApplication::postEvent(info->object, event);
+	PendingEvent event(info->object, new QTimerEvent(info->timerId));
+	info->self->m_event_list.append(event);
 }
 
 void EventDispatcherLibEventPrivate::disableTimers(bool disable)

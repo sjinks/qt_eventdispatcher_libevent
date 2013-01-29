@@ -3,8 +3,11 @@
 
 #include <qplatformdefs.h>
 #include <QtCore/QAbstractEventDispatcher>
+#include <QtCore/QEvent>
 #include <QtCore/QHash>
 #include <QtCore/QMultiHash>
+#include <QtCore/QPair>
+#include <QtCore/QPointer>
 #include <QtCore/QSet>
 
 #if QT_VERSION >= 0x040400
@@ -53,6 +56,8 @@ public:
 
 	typedef QMultiHash<evutil_socket_t, SocketNotifierInfo> SocketNotifierHash;
 	typedef QHash<int, TimerInfo*> TimerHash;
+	typedef QPair<QPointer<QObject>, QEvent*> PendingEvent;
+	typedef QList<PendingEvent> EventList;
 
 private:
 	Q_DISABLE_COPY(EventDispatcherLibEventPrivate)
@@ -68,6 +73,7 @@ private:
 	SocketNotifierHash m_notifiers;
 	TimerHash m_timers;
 	QSet<int> m_timers_to_reactivate;
+	EventList m_event_list;
 	bool m_seen_event;
 
 	void initialize(const EventDispatcherLibEventConfig* cfg);

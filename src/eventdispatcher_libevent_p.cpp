@@ -20,7 +20,7 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 #if QT_VERSION >= 0x040400
 	  m_wakeups(),
 #endif
-	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_seen_event(false)
+	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_event_list(), m_seen_event(false)
 {
 	this->initialize(0);
 }
@@ -30,7 +30,7 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 #if QT_VERSION >= 0x040400
 	  m_wakeups(),
 #endif
-	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_seen_event(false)
+	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_event_list(), m_seen_event(false)
 {
 #ifdef SJ_LIBEVENT_EMULATION
 	Q_UNUSED(cfg)
@@ -108,48 +108,47 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 		this->disableTimers(true);
 	}
 
-	bool result = false;
+	this->m_interrupt  = false;
 	this->m_seen_event = false;
 
-	if (q->hasPendingEvents()) {
-		QCoreApplication::sendPostedEvents();
-		result = true;
-		flags &= ~QEventLoop::WaitForMoreEvents;
+	Q_EMIT q->awake();
+#if QT_VERSION < 0x040500
+	QCoreApplication::sendPostedEvents(0, (flags & QEventLoop::DeferredDeletion) ? -1 : 0);
+#else
+	QCoreApplication::sendPostedEvents();
+#endif
+
+	bool can_wait = !this->m_interrupt && (flags & QEventLoop::WaitForMoreEvents);
+	int f         = EVLOOP_ONCE;
+	if (can_wait) {
+		Q_EMIT q->aboutToBlock();
+	}
+	else {
+		f |= EVLOOP_NONBLOCK;
 	}
 
 	QSet<int> timers;
 
-	if ((flags & QEventLoop::WaitForMoreEvents)) {
-		if (!this->m_interrupt) {
-			this->m_seen_event = false;
-			do {
-				Q_EMIT q->aboutToBlock();
-				event_base_loop(this->m_base, EVLOOP_ONCE);
+	if (!this->m_interrupt) {
+		event_base_loop(this->m_base, f);
 
-				timers.unite(this->m_timers_to_reactivate);
-				this->m_timers_to_reactivate.clear();
+		timers.unite(this->m_timers_to_reactivate);
+		this->m_timers_to_reactivate.clear();
+	}
 
-				if (!this->m_seen_event) {
-					// When this->m_seen_event == false, this means we have been woken up by wake().
-					// Send all potsed events here or tst_QEventLoop::execAfterExit() freezes
-					QCoreApplication::sendPostedEvents(); // an event handler invoked by sendPostedEvents() may invoke processEvents() again
-				}
+	EventList list(this->m_event_list);
+	this->m_event_list.clear();
 
-				Q_EMIT q->awake();
-			} while (!this->m_interrupt && !this->m_seen_event);
+	for (int i=0; i<list.size(); ++i) {
+		const PendingEvent& e = list.at(i);
+		if (!e.first.isNull()) {
+			QCoreApplication::sendEvent(e.first, e.second);
 		}
-	}
-	else {
-		event_base_loop(this->m_base, EVLOOP_ONCE | EVLOOP_NONBLOCK);
-		Q_EMIT q->awake(); // If removed, tst_QEventLoop::processEvents() fails
-		result |= this->m_seen_event;
+
+		delete e.second;
 	}
 
-	timers.unite(this->m_timers_to_reactivate);
-	this->m_timers_to_reactivate.clear();
-
-	result |= this->m_seen_event;
-	QCoreApplication::sendPostedEvents(); // an event handler invoked by sendPostedEvents() may invoke processEvents() again
+	bool result = list.size() > 0 || this->m_seen_event;
 
 	// Now that all event handlers have finished (and we returned from the recusrion), reactivate all pending timers
 	if (!timers.isEmpty()) {
@@ -180,7 +179,6 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 		this->disableTimers(false);
 	}
 
-	this->m_interrupt = false;
 	return result;
 }
 
@@ -196,7 +194,7 @@ void EventDispatcherLibEventPrivate::wake_up_handler(int fd, short int events, v
 	if (!disp->m_wakeups.testAndSetRelease(1, 0)) {
 		qCritical("%s: internal error, wakeUps.testAndSetRelease(1, 0) failed!", Q_FUNC_INFO);
 	}
-#else
-	Q_UNUSED(disp)
 #endif
+
+	disp->m_seen_event = true;
 }
