@@ -39,7 +39,8 @@
 **
 ****************************************************************************/
 
-#  include <QtCore/QCoreApplication>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QTime>
 #include <QtTest/QtTest>
 #include "eventdispatcher_libevent.h"
 
@@ -94,11 +95,19 @@ bool tst_QEventDispatcher::event(QEvent *e)
 // drain the system event queue after the test starts to avoid destabilizing the test functions
 void tst_QEventDispatcher::initTestCase()
 {
+#if QT_VERSION >= 0x040700
     QElapsedTimer elapsedTimer;
     elapsedTimer.start();
     while (!elapsedTimer.hasExpired(CoarseTimerInterval) && eventDispatcher->processEvents(QEventLoop::AllEvents)) {
             ;
     }
+#else
+    QTime elapsedTimer;
+    elapsedTimer.start();
+    while (elapsedTimer.elapsed() < CoarseTimerInterval && eventDispatcher->processEvents(QEventLoop::AllEvents)) {
+            ;
+    }
+#endif
 }
 
 // test that the eventDispatcher's timer implementation is complete and working
@@ -187,6 +196,7 @@ void tst_QEventDispatcher::sendPostedEvents()
     QFETCH(int, processEventsFlagsInt);
     QEventLoop::ProcessEventsFlags processEventsFlags = QEventLoop::ProcessEventsFlags(processEventsFlagsInt);
 
+#if QT_VERSION >= 0x040700
     QElapsedTimer elapsedTimer;
     elapsedTimer.start();
     while (!elapsedTimer.hasExpired(200)) {
@@ -201,6 +211,22 @@ void tst_QEventDispatcher::sendPostedEvents()
         // event shouldn't be delivered as a result of posting
         QCOMPARE(receivedEventType, int(QEvent::User));
     }
+#else
+    QTime elapsedTimer;
+    elapsedTimer.start();
+    while (elapsedTimer.elapsed() < 200) {
+        receivedEventType = -1;
+        QCoreApplication::postEvent(this, new QEvent(QEvent::User));
+
+        // event shouldn't be delivered as a result of posting
+        QCOMPARE(receivedEventType, -1);
+
+        // since there is a pending posted event, this should not actually block, it should send the posted event and return
+        QVERIFY(eventDispatcher->processEvents(processEventsFlags));
+        // event shouldn't be delivered as a result of posting
+        QCOMPARE(receivedEventType, int(QEvent::User));
+    }
+#endif
 }
 
 #include "tst_qeventdispatcher.moc"
