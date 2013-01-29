@@ -424,6 +424,9 @@ void tst_QEventLoop::exec()
         } catch (...) {
             ++caughtExceptions;
         }
+#if QT_VERSION < 0x040400
+        QEXPECT_FAIL("", "The test is known to fail in Qt 4.2, 4.3", Continue);
+#endif
         QCOMPARE(caughtExceptions, 2);
     }
 #endif
