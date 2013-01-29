@@ -183,7 +183,7 @@ void EventDispatcherLibEvent::wakeUp(void)
 {
 	Q_D(EventDispatcherLibEvent);
 
-#if QT_VERSION >= 0x040600
+#if QT_VERSION >= 0x040400
 	if (d->m_wakeups.testAndSetAcquire(0, 1))
 #endif
 	{
