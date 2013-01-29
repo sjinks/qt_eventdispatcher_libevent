@@ -150,7 +150,7 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 				if (te) {
 					TimerHash::Iterator tit = this->m_timers.find(te->timerId());
 					if (tit != this->m_timers.end()) {
-						EventDispatcherLibEventPrivate::TimerInfo* info = tit.value();
+						TimerInfo* info = tit.value();
 
 						if (!event_pending(info->ev, EV_TIMEOUT, 0)) { // false in tst_QTimer::restartedTimerFiresTooSoon()
 							EventDispatcherLibEventPrivate::calculateNextTimeout(info, now, delta);

@@ -23,6 +23,25 @@
 
 class EventDispatcherLibEvent;
 class EventDispatcherLibEventConfig;
+class EventDispatcherLibEventPrivate;
+
+struct SocketNotifierInfo {
+	QSocketNotifier* sn;
+	struct event* ev;
+};
+
+struct TimerInfo {
+	EventDispatcherLibEventPrivate* self;
+	QObject* object;
+	struct event* ev;
+	struct timeval when;
+	int timerId;
+	int interval;
+	Qt::TimerType type;
+};
+
+Q_DECLARE_TYPEINFO(SocketNotifierInfo, Q_PRIMITIVE_TYPE);
+Q_DECLARE_TYPEINFO(TimerInfo, Q_PRIMITIVE_TYPE);
 
 class Q_DECL_HIDDEN EventDispatcherLibEventPrivate {
 public:
@@ -37,21 +56,6 @@ public:
 	bool unregisterTimers(QObject* object);
 	QList<QAbstractEventDispatcher::TimerInfo> registeredTimers(QObject* object) const;
 	int remainingTime(int timerId) const;
-
-	struct SocketNotifierInfo {
-		QSocketNotifier* sn;
-		struct event* ev;
-	};
-
-	struct TimerInfo {
-		EventDispatcherLibEventPrivate* self;
-		QObject* object;
-		struct event* ev;
-		struct timeval when;
-		int timerId;
-		int interval;
-		Qt::TimerType type;
-	};
 
 	typedef QMultiHash<evutil_socket_t, SocketNotifierInfo> SocketNotifierHash;
 	typedef QHash<int, TimerInfo*> TimerHash;
@@ -76,8 +80,8 @@ private:
 
 	void initialize(const EventDispatcherLibEventConfig* cfg);
 
-	static void calculateCoarseTimerTimeout(EventDispatcherLibEventPrivate::TimerInfo* info, const struct timeval& now, struct timeval& when);
-	static void calculateNextTimeout(EventDispatcherLibEventPrivate::TimerInfo* info, const struct timeval& now, struct timeval& delta);
+	static void calculateCoarseTimerTimeout(TimerInfo* info, const struct timeval& now, struct timeval& when);
+	static void calculateNextTimeout(TimerInfo* info, const struct timeval& now, struct timeval& delta);
 
 	static void socket_notifier_callback(evutil_socket_t fd, short int events, void* arg);
 	static void timer_callback(evutil_socket_t fd, short int events, void* arg);
