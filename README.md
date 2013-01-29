@@ -15,7 +15,7 @@ libevent-based event dispatcher for Qt
 
 ## Requirements
 * libevent >= 2.0.4 (the code seems to work with libevent 1.4.x but this has not been tested much — but the Qt tests are successfully passed though)
-* Qt >= 4.2.1 (tests from tests-qt4 were tested only with Qt 4.8.x)
+* Qt >= 4.2 (tests from tests-qt4 were run only on Qt 4.8.x, 4.5.4, 4.3.0, 4.2.1)
 
 
 ## Build
@@ -131,3 +131,13 @@ Qt 5 allows to specify a custom event dispatcher for the thread:
 QThread* thr = new QThread;
 thr->setEventDispatcher(new EventDispatcherLibEvent);
 ```
+
+## Interesting Facts
+
+`EventDispatcherLibEvent` is more compatible with Qt 4.2.x and 4.3.x than the native UNIX event dispatcher from those Qt's.
+
+For example, Qt 4.2.1 fails `tst_QTimer::livelock(zero timer)` and `tst_QTimer::livelock(non-zero timer)` tests
+(`'tester.postEventAtRightTime' returned FALSE`) and hangs in `tst_QEventLoop::processEventsExcludeTimers` test
+but `EventDispatcherLibEvent` passes them all!
+
+It should, however, be noted that these tests were taken from Qt 4.8 :-)
