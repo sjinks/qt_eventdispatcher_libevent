@@ -20,7 +20,7 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 #if QT_VERSION >= 0x040400
 	  m_wakeups(),
 #endif
-	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_event_list(), m_seen_event(false)
+	  m_notifiers(), m_timers(), m_event_list(), m_seen_event(false)
 {
 	this->initialize(0);
 }
@@ -30,7 +30,7 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 #if QT_VERSION >= 0x040400
 	  m_wakeups(),
 #endif
-	  m_notifiers(), m_timers(), m_timers_to_reactivate(), m_event_list(), m_seen_event(false)
+	  m_notifiers(), m_timers(), m_event_list(), m_seen_event(false)
 {
 #ifdef SJ_LIBEVENT_EMULATION
 	Q_UNUSED(cfg)
@@ -95,18 +95,11 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 {
 	Q_Q(EventDispatcherLibEvent);
 
-	Q_ASSERT(this->m_timers_to_reactivate.isEmpty());
+	const bool exclude_notifiers = (flags & QEventLoop::ExcludeSocketNotifiers);
+	const bool exclude_timers    = (flags & QEventLoop::X11ExcludeTimers);
 
-	bool exclude_notifiers = (flags & QEventLoop::ExcludeSocketNotifiers);
-	bool exclude_timers    = (flags & QEventLoop::X11ExcludeTimers);
-
-	if (exclude_notifiers) {
-		this->disableSocketNotifiers(true);
-	}
-
-	if (exclude_timers) {
-		this->disableTimers(true);
-	}
+	exclude_notifiers && this->disableSocketNotifiers(true);
+	exclude_timers    && this->disableTimers(true);
 
 	this->m_interrupt  = false;
 	this->m_seen_event = false;
@@ -118,66 +111,61 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 	QCoreApplication::sendPostedEvents();
 #endif
 
-	bool can_wait = !this->m_interrupt && (flags & QEventLoop::WaitForMoreEvents);
-	int f         = EVLOOP_ONCE;
+	const bool can_wait = !this->m_interrupt && (flags & QEventLoop::WaitForMoreEvents);
 	if (can_wait) {
 		Q_EMIT q->aboutToBlock();
 	}
-	else {
-		f |= EVLOOP_NONBLOCK;
-	}
 
-	QSet<int> timers;
+	bool result = false;
 
 	if (!this->m_interrupt) {
-		event_base_loop(this->m_base, f);
+		event_base_loop(this->m_base, EVLOOP_ONCE | (can_wait ? 0 : EVLOOP_NONBLOCK));
 
-		timers.unite(this->m_timers_to_reactivate);
-		this->m_timers_to_reactivate.clear();
-	}
+#if QT_VERSION >= 0x040800
+		EventList list;
+		this->m_event_list.swap(list);
+#else
+		EventList list(this->m_event_list);
+		this->m_event_list.clear();
+#endif
 
-	EventList list(this->m_event_list);
-	this->m_event_list.clear();
+		result = (list.size() > 0) | this->m_seen_event;
 
-	for (int i=0; i<list.size(); ++i) {
-		const PendingEvent& e = list.at(i);
-		if (!e.first.isNull()) {
-			QCoreApplication::sendEvent(e.first, e.second);
+		for (int i=0; i<list.size(); ++i) {
+			const PendingEvent& e = list.at(i);
+			if (!e.first.isNull()) {
+				QCoreApplication::sendEvent(e.first, e.second);
+			}
 		}
 
-		delete e.second;
-	}
-
-	bool result = list.size() > 0 || this->m_seen_event;
-
-	// Now that all event handlers have finished (and we returned from the recusrion), reactivate all pending timers
-	if (!timers.isEmpty()) {
 		struct timeval now;
 		struct timeval delta;
 		evutil_gettimeofday(&now, 0);
-		QSet<int>::ConstIterator it = timers.constBegin();
-		while (it != timers.constEnd()) {
-			TimerHash::Iterator tit = this->m_timers.find(*it);
-			if (tit != this->m_timers.end()) {
-				EventDispatcherLibEventPrivate::TimerInfo* info = tit.value();
 
-				if (!event_pending(info->ev, EV_TIMEOUT, 0)) { // false in tst_QTimer::restartedTimerFiresTooSoon()
-					EventDispatcherLibEventPrivate::calculateNextTimeout(info, now, delta);
-					event_add(info->ev, &delta);
+		// Now that all event handlers have finished (and we returned from the recusrion), reactivate all pending timers
+		for (int i=0; i<list.size(); ++i) {
+			const PendingEvent& e = list.at(i);
+			if (!e.first.isNull() && e.second->type() == QEvent::Timer) {
+				QTimerEvent* te = static_cast<QTimerEvent*>(e.second);
+				if (te) {
+					TimerHash::Iterator tit = this->m_timers.find(te->timerId());
+					if (tit != this->m_timers.end()) {
+						EventDispatcherLibEventPrivate::TimerInfo* info = tit.value();
+
+						if (!event_pending(info->ev, EV_TIMEOUT, 0)) { // false in tst_QTimer::restartedTimerFiresTooSoon()
+							EventDispatcherLibEventPrivate::calculateNextTimeout(info, now, delta);
+							event_add(info->ev, &delta);
+						}
+					}
 				}
 			}
 
-			++it;
+			delete e.second;
 		}
 	}
 
-	if (exclude_notifiers) {
-		this->disableSocketNotifiers(false);
-	}
-
-	if (exclude_timers) {
-		this->disableTimers(false);
-	}
+	exclude_notifiers && this->disableSocketNotifiers(false);
+	exclude_timers    && this->disableTimers(false);
 
 	return result;
 }

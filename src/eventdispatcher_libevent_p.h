@@ -8,7 +8,6 @@
 #include <QtCore/QMultiHash>
 #include <QtCore/QPair>
 #include <QtCore/QPointer>
-#include <QtCore/QSet>
 
 #if QT_VERSION >= 0x040400
 #	include <QtCore/QAtomicInt>
@@ -72,7 +71,6 @@ private:
 #endif
 	SocketNotifierHash m_notifiers;
 	TimerHash m_timers;
-	QSet<int> m_timers_to_reactivate;
 	EventList m_event_list;
 	bool m_seen_event;
 
@@ -85,9 +83,9 @@ private:
 	static void timer_callback(evutil_socket_t fd, short int events, void* arg);
 	static void wake_up_handler(evutil_socket_t fd, short int events, void* arg);
 
-	void disableSocketNotifiers(bool disable);
+	bool disableSocketNotifiers(bool disable);
 	void killSocketNotifiers(void);
-	void disableTimers(bool disable);
+	bool disableTimers(bool disable);
 	void killTimers(void);
 };
 

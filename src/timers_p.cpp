@@ -290,16 +290,13 @@ void EventDispatcherLibEventPrivate::timer_callback(int fd, short int events, vo
 	Q_UNUSED(events)
 
 	EventDispatcherLibEventPrivate::TimerInfo* info = reinterpret_cast<EventDispatcherLibEventPrivate::TimerInfo*>(arg);
-	info->self->m_seen_event = true;
 
 	// Timer can be reactivated only after its callback finishes; processEvents() will take care of this
-	info->self->m_timers_to_reactivate.insert(info->timerId);
-
 	PendingEvent event(info->object, new QTimerEvent(info->timerId));
 	info->self->m_event_list.append(event);
 }
 
-void EventDispatcherLibEventPrivate::disableTimers(bool disable)
+bool EventDispatcherLibEventPrivate::disableTimers(bool disable)
 {
 	struct timeval now;
 	if (!disable) {
@@ -320,6 +317,8 @@ void EventDispatcherLibEventPrivate::disableTimers(bool disable)
 
 		++it;
 	}
+
+	return true;
 }
 
 void EventDispatcherLibEventPrivate::killTimers(void)

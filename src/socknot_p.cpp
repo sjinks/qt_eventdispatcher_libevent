@@ -49,7 +49,6 @@ void EventDispatcherLibEventPrivate::unregisterSocketNotifier(QSocketNotifier* n
 void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int events, void* arg)
 {
 	EventDispatcherLibEventPrivate* disp = reinterpret_cast<EventDispatcherLibEventPrivate*>(arg);
-	disp->m_seen_event = true;
 	SocketNotifierHash::Iterator it = disp->m_notifiers.find(fd);
 	while (it != disp->m_notifiers.end() && it.key() == fd) {
 		EventDispatcherLibEventPrivate::SocketNotifierInfo& data = it.value();
@@ -64,7 +63,7 @@ void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int 
 	}
 }
 
-void EventDispatcherLibEventPrivate::disableSocketNotifiers(bool disable)
+bool EventDispatcherLibEventPrivate::disableSocketNotifiers(bool disable)
 {
 	SocketNotifierHash::Iterator it = this->m_notifiers.begin();
 	while (it != this->m_notifiers.end()) {
@@ -78,6 +77,8 @@ void EventDispatcherLibEventPrivate::disableSocketNotifiers(bool disable)
 
 		++it;
 	}
+
+	return true;
 }
 
 void EventDispatcherLibEventPrivate::killSocketNotifiers(void)
