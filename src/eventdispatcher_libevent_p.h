@@ -9,10 +9,6 @@
 #include <QtCore/QPair>
 #include <QtCore/QPointer>
 
-#if QT_VERSION >= 0x040400
-#	include <QtCore/QAtomicInt>
-#endif
-
 #if defined(SJ_LIBEVENT_MAJOR) && SJ_LIBEVENT_MAJOR == 1
 #	include "libevent2-emul.h"
 #else
@@ -20,6 +16,7 @@
 #endif
 
 #include "qt4compat.h"
+#include "tco.h"
 
 class EventDispatcherLibEvent;
 class EventDispatcherLibEventConfig;
@@ -70,9 +67,7 @@ private:
 	bool m_interrupt;
 	struct event_base* m_base;
 	struct event* m_wakeup;
-#if QT_VERSION >= 0x040400
-	QAtomicInt m_wakeups;
-#endif
+	ThreadCommunicationObject* m_tco;
 	SocketNotifierHash m_notifiers;
 	TimerHash m_timers;
 	EventList m_event_list;

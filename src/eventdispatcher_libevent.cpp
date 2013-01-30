@@ -41,7 +41,8 @@ void EventDispatcherLibEvent::registerSocketNotifier(QSocketNotifier* notifier)
 		qWarning("QSocketNotifier: Internal error: sockfd < 0");
 		return;
 	}
-	else if (notifier->thread() != thread() || thread() != QThread::currentThread()) {
+
+	if (notifier->thread() != thread() || thread() != QThread::currentThread()) {
 		qWarning("QSocketNotifier: socket notifiers cannot be enabled from another thread");
 		return;
 	}
@@ -182,13 +183,7 @@ void EventDispatcherLibEvent::unregisterEventNotifier(QWinEventNotifier* notifie
 void EventDispatcherLibEvent::wakeUp(void)
 {
 	Q_D(EventDispatcherLibEvent);
-
-#if QT_VERSION >= 0x040400
-	if (d->m_wakeups.testAndSetAcquire(0, 1))
-#endif
-	{
-		event_active(d->m_wakeup, EV_TIMEOUT, 0);
-	}
+	d->m_tco->wakeUp();
 }
 
 void EventDispatcherLibEvent::interrupt(void)

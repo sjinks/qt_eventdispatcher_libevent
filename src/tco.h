@@ -2,7 +2,9 @@
 #define TCO_H
 
 #include <QtCore/QObject>
+#if QT_VERSION >= 0x040600
 #include <QtCore/QScopedPointer>
+#endif
 #include "qt4compat.h"
 
 class ThreadCommunicationObjectPrivate;

@@ -16,20 +16,14 @@ static void event_log_callback(int severity, const char* msg)
 
 
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q)
-	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0),
-#if QT_VERSION >= 0x040400
-	  m_wakeups(),
-#endif
+	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0), m_tco(0),
 	  m_notifiers(), m_timers(), m_event_list(), m_seen_event(false)
 {
 	this->initialize(0);
 }
 
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q, const EventDispatcherLibEventConfig& cfg)
-	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0),
-#if QT_VERSION >= 0x040400
-	  m_wakeups(),
-#endif
+	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0), m_tco(0),
 	  m_notifiers(), m_timers(), m_event_list(), m_seen_event(false)
 {
 #ifdef SJ_LIBEVENT_EMULATION
@@ -69,7 +63,12 @@ void EventDispatcherLibEventPrivate::initialize(const EventDispatcherLibEventCon
 		Q_CHECK_PTR(this->m_base);
 	}
 
-	this->m_wakeup = event_new(this->m_base, 0, EV_PERSIST, EventDispatcherLibEventPrivate::wake_up_handler, this);
+	this->m_tco = new ThreadCommunicationObject();
+	if (!this->m_tco->valid()) {
+		qFatal("%s: failed to create a thread communication object", Q_FUNC_INFO);
+	}
+
+	this->m_wakeup = event_new(this->m_base, this->m_tco->fd(), EV_READ | EV_PERSIST, EventDispatcherLibEventPrivate::wake_up_handler, this);
 	Q_CHECK_PTR(this->m_wakeup);
 	event_add(this->m_wakeup, 0);
 }
@@ -89,6 +88,8 @@ EventDispatcherLibEventPrivate::~EventDispatcherLibEventPrivate(void)
 		event_base_free(this->m_base);
 		this->m_base = 0;
 	}
+
+	delete this->m_tco;
 }
 
 bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlags flags)
@@ -178,11 +179,6 @@ void EventDispatcherLibEventPrivate::wake_up_handler(int fd, short int events, v
 	EventDispatcherLibEventPrivate* disp = reinterpret_cast<EventDispatcherLibEventPrivate*>(arg);
 	Q_ASSERT(disp != 0);
 
-#if QT_VERSION >= 0x040400
-	if (!disp->m_wakeups.testAndSetRelease(1, 0)) {
-		qCritical("%s: internal error, wakeUps.testAndSetRelease(1, 0) failed!", Q_FUNC_INFO);
-	}
-#endif
-
 	disp->m_seen_event = true;
+	disp->m_tco->awaken();
 }

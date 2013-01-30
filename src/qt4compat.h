@@ -74,6 +74,8 @@ namespace Qt { // Sorry
 		VeryCoarseTimer
 	};
 }
+
+typedef qptrdiff qintptr;
 #endif
 
 #endif // QT4COMPAT_H
