@@ -13,10 +13,7 @@ install:
   - sudo apt-get install -qq libqt4-dev libqt4-private-dev libevent-dev
 
 script:
-  - cd src
   - qmake
   - make
-  - cd ../tests-qt4
-  - qmake
-  - make
+  - cd tests-qt4
   - for i in ./tst_*; do ./$i; done
