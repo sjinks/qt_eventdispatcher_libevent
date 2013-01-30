@@ -1,3 +1,4 @@
+#include <QtCore/QObject>
 #if defined(SJ_LIBEVENT_MAJOR) && SJ_LIBEVENT_MAJOR == 1
 #	include "libevent2-emul.h"
 #else
