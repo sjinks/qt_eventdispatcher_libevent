@@ -3,5 +3,5 @@ INCLUDEPATH    += $$PWD/../src
 DEPENDPATH     += $$PWD/../src
 PRE_TARGETDEPS += $$PWD/../lib/libeventdispatcher_libevent.a
 
-CONFIG += qtestlib
-
+CONFIG += qtestlib console
+CONFIG -= app_bundle

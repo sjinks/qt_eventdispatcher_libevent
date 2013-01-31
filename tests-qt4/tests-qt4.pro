@@ -3,7 +3,8 @@ TEMPLATE = subdirs
 SUBDIRS = \
 	qeventdispatcher \
 	qeventloop \
-	qtimer
+	qtimer \
+	issues
 
 # Benchmarks appeared in Qt 4.6
 greaterThan(QT_MINOR_VERSION, 5) {
