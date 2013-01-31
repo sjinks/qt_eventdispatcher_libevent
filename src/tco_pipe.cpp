@@ -85,7 +85,7 @@ public:
 			int res;
 			char val = 1;
 			do {
-				res = ::write(this->fd[1], val, sizeof(val));
+				res = ::write(this->fd[1], &val, sizeof(val));
 			} while (Q_UNLIKELY(res == -1 && errno == EINTR));
 
 			if (Q_UNLIKELY(-1 == res)) {
@@ -107,7 +107,7 @@ public:
 			do {
 				res = ::read(this->fd[0], buf, sizeof(buf));
 			} while (Q_UNLIKELY(-1 == res && EINTR == errno));
-		} while (res != 0);
+		} while (res == sizeof(buf));
 
 		if (Q_UNLIKELY(-1 == res)) {
 			qErrnoWarning("%s: read() failed", Q_FUNC_INFO);
