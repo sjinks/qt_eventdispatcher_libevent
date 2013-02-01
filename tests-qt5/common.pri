@@ -1,7 +1,8 @@
-LIBS           += -L$$PWD/../lib -leventdispatcher_libevent
-INCLUDEPATH    += $$PWD/../src
-DEPENDPATH     += $$PWD/../src
-PRE_TARGETDEPS += $$PWD/../lib/libeventdispatcher_libevent.a
+LIBS        += -L$$OUT_PWD/$$DESTDIR/../lib -leventdispatcher_libevent
+INCLUDEPATH += $$PWD/../src
+DEPENDPATH  += $$PWD/../src
 
-CONFIG += console
+unix:PRE_TARGETDEPS += $$DESTDIR/../lib/libeventdispatcher_libevent.a
+
+CONFIG += console link_prl
 CONFIG -= app_bundle

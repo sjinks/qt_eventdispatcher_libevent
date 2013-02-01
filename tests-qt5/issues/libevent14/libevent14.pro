@@ -4,6 +4,6 @@ TARGET   = tst_libevent14
 CONFIG  += console
 CONFIG  -= app_bundle
 SOURCES += tst_libevent14.cpp
-DESTDIR  = ../../
+DESTDIR  = ../..
 
 include(../../common.pri)
