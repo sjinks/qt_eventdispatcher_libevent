@@ -1,2 +1,5 @@
 TEMPLATE = subdirs
-SUBDIRS  = libevent14
+SUBDIRS  = \
+	libevent14 \
+	epoll3
+
