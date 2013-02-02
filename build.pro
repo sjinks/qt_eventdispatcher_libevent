@@ -1,13 +1,7 @@
 TEMPLATE = subdirs
 CONFIG  += ordered
 
-SUBDIRS = src
+SUBDIRS = src tests
 
-src.file = src/eventdispatcher_libevent.pro
-
-greaterThan(QT_MAJOR_VERSION, 4) {
-	SUBDIRS += tests-qt5
-}
-else {
-	SUBDIRS += tests-qt4
-}
+src.file   = src/eventdispatcher_libevent.pro
+tests.file = tests/qt_eventdispatcher_tests/build.pro

@@ -6,3 +6,4 @@ moc_*.cpp
 Makefile
 Makefile.*
 /*.sh
+*.pro.user
