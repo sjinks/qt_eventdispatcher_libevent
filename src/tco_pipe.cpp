@@ -31,13 +31,13 @@ public:
 		int res;
 
 #if defined(Q_OS_INTEGRITY) || defined(Q_OS_VXWORKS)
-		if (::socketpair(AF_LOCAL, SOCK_STREAM, 0, fd)) {
+		if (::socketpair(AF_LOCAL, SOCK_STREAM, 0, this->fd)) {
 			qErrnoWarning("%s: Failed to create a socket pair", Q_FUNC_INFO);
 			return -1;
 		}
 #else
 #	if THREADSAFE_CLOEXEC_SUPPORTED
-		res = ::pipe2(fd, O_CLOEXEC | O_NONBLOCK);
+		res = ::pipe2(this->fd, O_CLOEXEC | O_NONBLOCK);
 		if (res != -1 && errno != ENOSYS) {
 			if (-1 == res) {
 				qErrnoWarning("%s: Failed to create a pipe", Q_FUNC_INFO);
@@ -48,7 +48,7 @@ public:
 		}
 #	endif // THREADSAFE_CLOEXEC_SUPPORTED
 
-		res = ::pipe(fd);
+		res = ::pipe(this->fd);
 		if (-1 == res) {
 			qErrnoWarning("%s: Failed to create a pipe", Q_FUNC_INFO);
 			return;
