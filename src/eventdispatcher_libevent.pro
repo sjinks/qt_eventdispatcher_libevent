@@ -21,7 +21,6 @@ SOURCES += \
 	socknot_p.cpp \
 	eventdispatcher_libevent_config.cpp
 
-
 headers.files = eventdispatcher_libevent.h eventdispatcher_libevent_config.h
 
 unix {
@@ -66,6 +65,10 @@ else {
 	LIBS        += -levent
 	headers.path = $$DESTDIR
 	target.path  = $$DESTDIR
+}
+
+win32 {
+	SOURCES += tco_win32_libevent.cpp
 }
 
 INSTALLS += target headers
