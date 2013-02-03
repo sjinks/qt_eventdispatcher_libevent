@@ -1,6 +1,4 @@
-#include <QtCore/QCoreApplication>
-#include <QtCore/QEvent>
-#include <QtCore/QPair>
+#include "common.h"
 #include "eventdispatcher_libevent_p.h"
 
 void EventDispatcherLibEventPrivate::calculateCoarseTimerTimeout(TimerInfo* info, const struct timeval& now, struct timeval& when)

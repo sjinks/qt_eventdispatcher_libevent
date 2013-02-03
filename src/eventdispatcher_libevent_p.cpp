@@ -1,9 +1,12 @@
-#include <qplatformdefs.h>
-#include <QtCore/QCoreApplication>
+#include "common.h"
 #include "eventdispatcher_libevent.h"
 #include "eventdispatcher_libevent_p.h"
 #include "eventdispatcher_libevent_config.h"
 #include "eventdispatcher_libevent_config_p.h"
+
+#ifdef Q_OS_WIN
+Q_GLOBAL_STATIC(WSAInitializer, wsa_initializer)
+#endif
 
 static void event_log_callback(int severity, const char* msg)
 {
@@ -40,6 +43,13 @@ void EventDispatcherLibEventPrivate::initialize(const EventDispatcherLibEventCon
 	static bool init = false;
 	if (!init) {
 		init = true;
+
+#ifdef Q_OS_WIN
+		if (!WSAInitialized()) {
+			wsa_initializer();
+		}
+#endif
+
 		event_set_log_callback(event_log_callback);
 
 #if defined(LIBEVENT_VERSION_NUMBER) && LIBEVENT_VERSION_NUMBER > 0x02010100

@@ -2,6 +2,7 @@
 #define QT4COMPAT_H
 
 #include <QtCore/QtGlobal>
+#include <QtCore/qobjectdefs.h>
 
 #if !defined(Q_UNREACHABLE) && !defined(Q_ASSUME)
 #	if defined(Q_CC_INTEL) || defined(Q_CC_MSVC)

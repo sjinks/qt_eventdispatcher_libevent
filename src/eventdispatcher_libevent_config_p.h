@@ -1,7 +1,6 @@
 #ifndef EVENTDISPATCHER_LIBEVENT_CONFIG_P_H
 #define EVENTDISPATCHER_LIBEVENT_CONFIG_P_H
 
-#include <QtCore/QtGlobal>
 #include "qt4compat.h"
 
 struct event_config;

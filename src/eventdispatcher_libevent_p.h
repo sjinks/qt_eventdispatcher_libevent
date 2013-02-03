@@ -1,21 +1,7 @@
 #ifndef EVENTDISPATCHER_LIBEVENT_P_H
 #define EVENTDISPATCHER_LIBEVENT_P_H
 
-#include <qplatformdefs.h>
-#include <QtCore/QAbstractEventDispatcher>
-#include <QtCore/QEvent>
-#include <QtCore/QHash>
-#include <QtCore/QMultiHash>
-#include <QtCore/QPair>
-#include <QtCore/QPointer>
-
-#if defined(SJ_LIBEVENT_MAJOR) && SJ_LIBEVENT_MAJOR == 1
-#	include "libevent2-emul.h"
-#else
-#	include <event2/event.h>
-#endif
-
-#include "qt4compat.h"
+#include "common.h"
 #include "tco.h"
 
 class EventDispatcherLibEvent;

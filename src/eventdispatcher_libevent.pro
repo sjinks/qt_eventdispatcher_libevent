@@ -2,7 +2,7 @@ QT      -= gui
 TARGET   = eventdispatcher_libevent
 TEMPLATE = lib
 DESTDIR  = ../lib
-CONFIG  += staticlib create_prl
+CONFIG  += staticlib create_prl precompile_header
 
 HEADERS += \
 	eventdispatcher_libevent.h \
@@ -12,7 +12,8 @@ HEADERS += \
 	libevent2-emul.h \
 	qt4compat.h \
 	tco.h \
-	tco_impl.h
+	tco_impl.h \
+	common.h
 
 SOURCES += \
 	eventdispatcher_libevent.cpp \
@@ -20,6 +21,8 @@ SOURCES += \
 	timers_p.cpp \
 	socknot_p.cpp \
 	eventdispatcher_libevent_config.cpp
+
+PRECOMPILED_HEADER = common.h
 
 headers.files = eventdispatcher_libevent.h eventdispatcher_libevent_config.h
 
@@ -69,6 +72,8 @@ else {
 
 win32 {
 	SOURCES += tco_win32_libevent.cpp
+	HEADERS += wsainit.h
+	LIBS    += $$QMAKE_LIBS_NETWORK
 }
 
 INSTALLS += target headers

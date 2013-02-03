@@ -1,4 +1,4 @@
-#include <qplatformdefs.h>
+#include "common.h"
 #include <errno.h>
 #include "tco.h"
 

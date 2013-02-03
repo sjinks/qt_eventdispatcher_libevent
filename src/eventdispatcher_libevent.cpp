@@ -1,6 +1,4 @@
-#include <QtCore/QPair>
-#include <QtCore/QSocketNotifier>
-#include <QtCore/QThread>
+#include "common.h"
 #include "eventdispatcher_libevent.h"
 #include "eventdispatcher_libevent_p.h"
 

@@ -1,7 +1,6 @@
 #ifndef TCO_H
 #define TCO_H
 
-#include <QtCore/QObject>
 #if QT_VERSION >= 0x040600
 #include <QtCore/QScopedPointer>
 #endif

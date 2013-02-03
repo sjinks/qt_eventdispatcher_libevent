@@ -1,6 +1,4 @@
-#include <QtCore/QCoreApplication>
-#include <QtCore/QEvent>
-#include <QtCore/QSocketNotifier>
+#include "common.h"
 #include "eventdispatcher_libevent_p.h"
 
 void EventDispatcherLibEventPrivate::registerSocketNotifier(QSocketNotifier* notifier)

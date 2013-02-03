@@ -3,7 +3,6 @@
 
 #define SJ_LIBEVENT_EMULATION 1
 
-#include <QtCore/QtGlobal>
 #include <event.h>
 #include "qt4compat.h"
 
