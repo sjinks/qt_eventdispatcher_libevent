@@ -115,6 +115,8 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 	this->m_interrupt  = false;
 	this->m_seen_event = false;
 
+	bool result = q->hasPendingEvents();
+
 	Q_EMIT q->awake();
 #if QT_VERSION < 0x040500
 	QCoreApplication::sendPostedEvents(0, (flags & QEventLoop::DeferredDeletion) ? -1 : 0);
@@ -127,8 +129,6 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 		Q_EMIT q->aboutToBlock();
 	}
 
-	bool result = false;
-
 	if (!this->m_interrupt) {
 		event_base_loop(this->m_base, EVLOOP_ONCE | (can_wait ? 0 : EVLOOP_NONBLOCK));
 
@@ -140,7 +140,7 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 		this->m_event_list.clear();
 #endif
 
-		result = (list.size() > 0) | this->m_seen_event;
+		result |= (list.size() > 0) | this->m_seen_event;
 
 		for (int i=0; i<list.size(); ++i) {
 			const PendingEvent& e = list.at(i);
