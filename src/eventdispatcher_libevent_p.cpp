@@ -20,14 +20,14 @@ static void event_log_callback(int severity, const char* msg)
 
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q)
 	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0), m_tco(0),
-	  m_notifiers(), m_timers(), m_event_list(), m_seen_event(false)
+	  m_notifiers(), m_timers(), m_event_list(), m_awaken(false)
 {
 	this->initialize(0);
 }
 
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q, const EventDispatcherLibEventConfig& cfg)
 	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0), m_tco(0),
-	  m_notifiers(), m_timers(), m_event_list(), m_seen_event(false)
+	  m_notifiers(), m_timers(), m_event_list(), m_awaken(false)
 {
 #ifdef SJ_LIBEVENT_EMULATION
 	Q_UNUSED(cfg)
@@ -112,8 +112,8 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 	exclude_notifiers && this->disableSocketNotifiers(true);
 	exclude_timers    && this->disableTimers(true);
 
-	this->m_interrupt  = false;
-	this->m_seen_event = false;
+	this->m_interrupt = false;
+	this->m_awaken    = false;
 
 	bool result = q->hasPendingEvents();
 
@@ -140,7 +140,7 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 		this->m_event_list.clear();
 #endif
 
-		result |= (list.size() > 0) | this->m_seen_event;
+		result |= (list.size() > 0) | this->m_awaken;
 
 		for (int i=0; i<list.size(); ++i) {
 			const PendingEvent& e = list.at(i);
@@ -187,6 +187,6 @@ void EventDispatcherLibEventPrivate::wake_up_handler(int fd, short int events, v
 	EventDispatcherLibEventPrivate* disp = reinterpret_cast<EventDispatcherLibEventPrivate*>(arg);
 	Q_ASSERT(disp != 0);
 
-	disp->m_seen_event = true;
+	disp->m_awaken = true;
 	disp->m_tco->awaken();
 }

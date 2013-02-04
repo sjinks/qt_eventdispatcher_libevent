@@ -57,7 +57,7 @@ private:
 	SocketNotifierHash m_notifiers;
 	TimerHash m_timers;
 	EventList m_event_list;
-	bool m_seen_event;
+	bool m_awaken;
 
 	void initialize(const EventDispatcherLibEventConfig* cfg);
 
