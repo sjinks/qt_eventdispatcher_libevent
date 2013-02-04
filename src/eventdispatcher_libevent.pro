@@ -74,6 +74,8 @@ win32 {
 	SOURCES += tco_win32_libevent.cpp
 	HEADERS += wsainit.h
 	LIBS    += $$QMAKE_LIBS_NETWORK
+	CONFIG  -= staticlib
+	CONFIG  += dll
 }
 
 INSTALLS += target headers

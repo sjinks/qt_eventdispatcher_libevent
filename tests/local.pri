@@ -12,3 +12,7 @@ unix|*-g++* {
 else:win32 {
 	PRE_TARGETDEPS *= $$OUT_PWD/$$DESTDIR/../lib/eventdispatcher_libevent$${LIB_SUFFIX}.lib
 }
+
+equals(TARGET, tst_qsocketnotifier):win32 {
+	LIBS += $$QMAKE_LIBS_NETWORK
+}
