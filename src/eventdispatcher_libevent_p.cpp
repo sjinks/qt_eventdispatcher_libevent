@@ -124,7 +124,7 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 	QCoreApplication::sendPostedEvents();
 #endif
 
-	const bool can_wait = !this->m_interrupt && (flags & QEventLoop::WaitForMoreEvents);
+	const bool can_wait = !this->m_interrupt && (flags & QEventLoop::WaitForMoreEvents) && !result;
 	if (can_wait) {
 		Q_EMIT q->aboutToBlock();
 	}
