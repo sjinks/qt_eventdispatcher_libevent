@@ -7,3 +7,4 @@ Makefile
 Makefile.*
 /*.sh
 *.pro.user
+/tests/tst_*
