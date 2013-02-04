@@ -158,15 +158,13 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 			const PendingEvent& e = list.at(i);
 			if (!e.first.isNull() && e.second->type() == QEvent::Timer) {
 				QTimerEvent* te = static_cast<QTimerEvent*>(e.second);
-				if (te) {
-					TimerHash::Iterator tit = this->m_timers.find(te->timerId());
-					if (tit != this->m_timers.end()) {
-						TimerInfo* info = tit.value();
+				TimerHash::Iterator tit = this->m_timers.find(te->timerId());
+				if (tit != this->m_timers.end()) {
+					TimerInfo* info = tit.value();
 
-						if (!event_pending(info->ev, EV_TIMEOUT, 0)) { // false in tst_QTimer::restartedTimerFiresTooSoon()
-							EventDispatcherLibEventPrivate::calculateNextTimeout(info, now, delta);
-							event_add(info->ev, &delta);
-						}
+					if (!event_pending(info->ev, EV_TIMEOUT, 0)) { // false in tst_QTimer::restartedTimerFiresTooSoon()
+						EventDispatcherLibEventPrivate::calculateNextTimeout(info, now, delta);
+						event_add(info->ev, &delta);
 					}
 				}
 			}
