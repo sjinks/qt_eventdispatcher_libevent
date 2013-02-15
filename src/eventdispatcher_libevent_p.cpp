@@ -8,6 +8,12 @@
 Q_GLOBAL_STATIC(WSAInitializer, wsa_initializer)
 #endif
 
+/**
+ * Callback to report warnings and errors from libevent
+ *
+ * @param severity Message severity
+ * @param msg Message
+ */
 static void event_log_callback(int severity, const char* msg)
 {
 	switch (severity) {
@@ -17,7 +23,10 @@ static void event_log_callback(int severity, const char* msg)
 	}
 }
 
-
+/**
+ * @brief Constructs the event dispatcher
+ * @param q Pointer to event dispatcher's public interface
+ */
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q)
 	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0), m_tco(0),
 	  m_notifiers(), m_timers(), m_event_list(), m_awaken(false)
@@ -25,6 +34,13 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 	this->initialize(0);
 }
 
+/**
+ * @brief Constructs the event dispatcher
+ * @param q Pointer to event dispatcher's public interface
+ * @param cfg Configuration
+ * @warning @a cfg parameter is ignored if the dispatcher is linked with libevent 1.x.
+ * Configurations are supported since libevent 2.0
+ */
 EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLibEvent* const q, const EventDispatcherLibEventConfig& cfg)
 	: q_ptr(q), m_interrupt(false), m_base(0), m_wakeup(0), m_tco(0),
 	  m_notifiers(), m_timers(), m_event_list(), m_awaken(false)
@@ -38,6 +54,10 @@ EventDispatcherLibEventPrivate::EventDispatcherLibEventPrivate(EventDispatcherLi
 #endif
 }
 
+/**
+ * @brief Initializes the event dispatcher
+ * @param cfg Event dispatcher configuration
+ */
 void EventDispatcherLibEventPrivate::initialize(const EventDispatcherLibEventConfig* cfg)
 {
 	static bool init = false;
@@ -83,6 +103,9 @@ void EventDispatcherLibEventPrivate::initialize(const EventDispatcherLibEventCon
 	event_add(this->m_wakeup, 0);
 }
 
+/**
+ * @brief Destroys the event dispatcher
+ */
 EventDispatcherLibEventPrivate::~EventDispatcherLibEventPrivate(void)
 {
 	if (this->m_wakeup) {
@@ -102,6 +125,33 @@ EventDispatcherLibEventPrivate::~EventDispatcherLibEventPrivate(void)
 	delete this->m_tco;
 }
 
+/**
+ * @brief Processes pending events that match @a flags until there are no more events to process
+ * @param flags
+ * @return Whether an event has been processed
+ * @retval true If an event has been processed;
+ * @retval false If no events have been processed
+ *
+ * Processes pending events that match @a flags until there are no
+ * more events to process. Returns true if an event was processed;
+ * otherwise returns false.
+ *
+ * If the QEventLoop::WaitForMoreEvents flag is set in @a flags, the
+ * behavior of this function is as follows:
+ *
+ * @list
+ * @li If events are available, this function returns after processing them.
+ * @li If no events are available, this function will wait until more
+ * are available and return after processing newly available events.
+ * @endlist
+ *
+ * If the QEventLoop::WaitForMoreEvents flag is not set in @a flags,
+ * and no events are available, this function will return
+ * immediately.
+ *
+ * @note This function does not process events continuously; it
+ * returns after all available events are processed.
+ */
 bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlags flags)
 {
 	Q_Q(EventDispatcherLibEvent);
@@ -179,6 +229,13 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 	return result;
 }
 
+/**
+ * @internal
+ * @brief Wakeup handler
+ * @param fd Not used
+ * @param events Not used
+ * @param arg Pointer to @c EventDispatcherLibEventPrivate instance
+ */
 void EventDispatcherLibEventPrivate::wake_up_handler(int fd, short int events, void* arg)
 {
 	Q_UNUSED(fd)

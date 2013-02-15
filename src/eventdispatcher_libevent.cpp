@@ -93,7 +93,7 @@ EventDispatcherLibEvent::~EventDispatcherLibEvent(void)
  * and no events are available, this function will return
  * immediately.
  *
- * @b Note: This function does not process events continuously; it
+ * @note This function does not process events continuously; it
  * returns after all available events are processed.
  *
  * @see hasPendingEvents()
