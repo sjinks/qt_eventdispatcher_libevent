@@ -11,7 +11,7 @@ libevent-based event dispatcher for Qt
 
 ## Unsupported Features
 * `QSocketNotifier::Exception` (libevent offers no support for this)
-* Qt 5 only: `QWinEventNotifier` is not supported (`registerEventNotifier()` and `unregisterEventNotifier()` functions
+* Qt 5/Windows only: `QWinEventNotifier` is not supported (`registerEventNotifier()` and `unregisterEventNotifier()` functions
 are currently implemented as stubs; libevent does not natively support Windows events and addition of the support
 to the event dispatcher will mean a completely different event loop code for Windows).
 
