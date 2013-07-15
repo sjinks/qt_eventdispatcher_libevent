@@ -8,12 +8,13 @@ libevent-based event dispatcher for Qt
 * does not use any private Qt headers
 * passes Qt 4 and Qt 5 event dispatcher, event loop, timer and socket notifier tests
 
+
 ## Unsupported Features
 * `QSocketNotifier::Exception` (libevent offers no support for this)
-* undocumented `QCoreApplication::watchUnixSignal()` is not supported (GLib dispatcher does not support it either; this feature was removed from Qt 5 anyway)
 * Qt 5 only: `QWinEventNotifier` is not supported (`registerEventNotifier()` and `unregisterEventNotifier()` functions
-are currently implemented as stubs; libevent does not natively support Windows events and addition of the suuport
+are currently implemented as stubs; libevent does not natively support Windows events and addition of the support
 to the event dispatcher will mean a completely different event loop code for Windows).
+
 
 ## Requirements
 * libevent >= 2.0.0 (the code seems to work with libevent 1.4.x but this has not been tested much — but the Qt tests are successfully passed though)
@@ -31,6 +32,7 @@ make
 Replace `make` with `nmake` if your are using Microsoft Visual C++.
 
 The above commands will generate the static library and `.prl` file in `../lib` directory.
+
 
 ## Install
 
@@ -133,6 +135,7 @@ Qt 5 allows to specify a custom event dispatcher for the thread:
 QThread* thr = new QThread;
 thr->setEventDispatcher(new EventDispatcherLibEvent);
 ```
+
 
 ## Interesting Facts
 
