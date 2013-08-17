@@ -22,4 +22,9 @@ Q_DECL_HIDDEN inline void event_free(struct event* e)
 	delete e;
 }
 
+Q_DECL_HIDDEN inline void event_reinit(struct event_base* base)
+{
+	qWarning("%s: not implemented", Q_FUNC_INFO);
+}
+
 #endif
