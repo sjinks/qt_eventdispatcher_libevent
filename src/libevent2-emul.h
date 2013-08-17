@@ -4,6 +4,7 @@
 #define SJ_LIBEVENT_EMULATION 1
 
 #include <event.h>
+#include <evutil.h>
 #include "qt4compat.h"
 
 typedef int evutil_socket_t;
@@ -20,11 +21,6 @@ Q_DECL_HIDDEN inline struct event* event_new(struct event_base* base, evutil_soc
 Q_DECL_HIDDEN inline void event_free(struct event* e)
 {
 	delete e;
-}
-
-Q_DECL_HIDDEN inline void event_reinit(struct event_base* base)
-{
-	qWarning("%s: not implemented", Q_FUNC_INFO);
 }
 
 #endif
