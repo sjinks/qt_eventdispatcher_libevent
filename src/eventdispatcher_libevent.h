@@ -3,8 +3,6 @@
 
 #include <QtCore/QAbstractEventDispatcher>
 
-struct event_base;
-
 class EventDispatcherLibEventPrivate;
 class EventDispatcherLibEventConfig;
 
@@ -15,7 +13,7 @@ public:
 	EventDispatcherLibEvent(const EventDispatcherLibEventConfig& config, QObject* parent = 0);
 	virtual ~EventDispatcherLibEvent(void);
 
-	struct event_base* eventBase() const;
+	struct event_base* eventBase(void) const;
 
 	virtual bool processEvents(QEventLoop::ProcessEventsFlags flags);
 	virtual bool hasPendingEvents(void);

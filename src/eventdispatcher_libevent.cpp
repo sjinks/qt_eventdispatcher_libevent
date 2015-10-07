@@ -69,7 +69,7 @@ EventDispatcherLibEvent::~EventDispatcherLibEvent(void)
  * Retrieve the libevent event_base for this dispatcher
  * @return The event_base for this dispatcher
  */
-struct event_base* EventDispatcherLibEvent::eventBase() const
+struct event_base* EventDispatcherLibEvent::eventBase(void) const
 {
 	const Q_D(EventDispatcherLibEvent);
 	return d->eventBase();
