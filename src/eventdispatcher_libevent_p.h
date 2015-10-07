@@ -40,6 +40,8 @@ public:
 	QList<QAbstractEventDispatcher::TimerInfo> registeredTimers(QObject* object) const;
 	int remainingTime(int timerId) const;
 
+	struct event_base* eventBase() const;
+
 	typedef QMultiHash<evutil_socket_t, SocketNotifierInfo> SocketNotifierHash;
 	typedef QHash<int, TimerInfo*> TimerHash;
 	typedef QPair<QPointer<QObject>, QEvent*> PendingEvent;

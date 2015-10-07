@@ -231,6 +231,16 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 
 /**
  * @internal
+ * @brief event_base accessor
+ * @return The internal event_base for this dispatcher
+ */
+struct event_base* EventDispatcherLibEventPrivate::eventBase() const
+{
+	return m_base;
+}
+
+/**
+ * @internal
  * @brief Wakeup handler
  * @param fd Not used
  * @param events Not used
