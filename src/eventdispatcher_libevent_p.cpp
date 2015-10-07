@@ -13,6 +13,7 @@ Q_GLOBAL_STATIC(WSAInitializer, wsa_initializer)
  *
  * @param severity Message severity
  * @param msg Message
+ * @internal
  */
 static void event_log_callback(int severity, const char* msg)
 {
@@ -230,13 +231,12 @@ bool EventDispatcherLibEventPrivate::processEvents(QEventLoop::ProcessEventsFlag
 }
 
 /**
- * @internal
  * @brief event_base accessor
  * @return The internal event_base for this dispatcher
  */
-struct event_base* EventDispatcherLibEventPrivate::eventBase() const
+struct event_base* EventDispatcherLibEventPrivate::eventBase(void) const
 {
-	return m_base;
+	return this->m_base;
 }
 
 /**
