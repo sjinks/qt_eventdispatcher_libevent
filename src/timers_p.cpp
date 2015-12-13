@@ -287,7 +287,7 @@ void EventDispatcherLibEventPrivate::timer_callback(int fd, short int events, vo
 	Q_UNUSED(fd)
 	Q_UNUSED(events)
 
-	TimerInfo* info = reinterpret_cast<TimerInfo*>(arg);
+	TimerInfo* info = static_cast<TimerInfo*>(arg);
 
 	// Timer can be reactivated only after its callback finishes; processEvents() will take care of this
 	PendingEvent event(info->object, new QTimerEvent(info->timerId));
