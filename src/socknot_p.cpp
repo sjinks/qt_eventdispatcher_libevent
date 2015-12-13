@@ -46,7 +46,7 @@ void EventDispatcherLibEventPrivate::unregisterSocketNotifier(QSocketNotifier* n
 
 void EventDispatcherLibEventPrivate::socket_notifier_callback(int fd, short int events, void* arg)
 {
-	EventDispatcherLibEventPrivate* disp = reinterpret_cast<EventDispatcherLibEventPrivate*>(arg);
+	EventDispatcherLibEventPrivate* disp = static_cast<EventDispatcherLibEventPrivate*>(arg);
 	SocketNotifierHash::Iterator it = disp->m_notifiers.find(fd);
 	while (it != disp->m_notifiers.end() && it.key() == fd) {
 		SocketNotifierInfo& data   = it.value();

@@ -251,7 +251,7 @@ void EventDispatcherLibEventPrivate::wake_up_handler(int fd, short int events, v
 	Q_UNUSED(fd)
 	Q_UNUSED(events)
 
-	EventDispatcherLibEventPrivate* disp = reinterpret_cast<EventDispatcherLibEventPrivate*>(arg);
+	EventDispatcherLibEventPrivate* disp = static_cast<EventDispatcherLibEventPrivate*>(arg);
 	Q_ASSERT(disp != 0);
 
 	disp->m_awaken = true;
