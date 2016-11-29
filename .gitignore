@@ -8,3 +8,4 @@ Makefile.*
 /*.sh
 *.pro.user
 /tests/tst_*
+.qmake.stash
