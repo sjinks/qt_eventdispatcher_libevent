@@ -9,3 +9,4 @@ Makefile.*
 *.pro.user
 /tests/tst_*
 .qmake.stash
+*.gch
