@@ -10,3 +10,16 @@ LIBS           += -L$$PWD/../lib -leventdispatcher_libevent
 INCLUDEPATH    += $$PWD/../src
 DEPENDPATH     += $$PWD/../src
 PRE_TARGETDEPS += $$PWD/../lib/libeventdispatcher_libevent.a
+
+headers.files   = eventdispatcher_libevent_qpa.h
+
+unix {
+	target.path  = /usr/lib
+	headers.path = /usr/include
+}
+else {
+	headers.path = $$DESTDIR
+	target.path  = $$DESTDIR
+}
+
+INSTALLS += target headers
