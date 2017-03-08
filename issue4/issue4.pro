@@ -1,7 +1,8 @@
 TEMPLATE = app
 QT      += qml quick
-CONFIG  += debug
+CONFIG  += qmltestcase
 SOURCES += main.cpp
+TARGET   = tst_issue4
 
 INCLUDEPATH += ../src
 
