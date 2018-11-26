@@ -11,7 +11,7 @@ class EventDispatcherLibEventQPA : public EventDispatcherLibEvent {
 	Q_OBJECT
 public:
 	explicit EventDispatcherLibEventQPA(QObject* parent = 0);
-	virtual ~EventDispatcherLibEventQPA(void);
+	virtual ~EventDispatcherLibEventQPA(void) Q_DECL_OVERRIDE;
 
 	bool processEvents(QEventLoop::ProcessEventsFlags flags) Q_DECL_OVERRIDE;
 	bool hasPendingEvents(void) Q_DECL_OVERRIDE;
